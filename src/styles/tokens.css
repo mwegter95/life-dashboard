@@ -1,0 +1,50 @@
+/* Life Dashboard — design tokens.
+   Light defaults at :root; .dark overrides for dark mode.
+   Theme palettes (paper / slate / forest) live in app code and write the
+   neutral vars directly. Reward colors (gold, fire, good) stay constant. */
+
+:root {
+  --bg:           oklch(98%   0.006 75);
+  --surface:      oklch(96.5% 0.006 75);
+  --surface-2:    oklch(94%   0.008 75);
+  --ink:          oklch(20%   0.015 70);
+  --ink-2:        oklch(38%   0.012 70);
+  --muted:        oklch(55%   0.012 70);
+  --faint:        oklch(72%   0.008 75);
+  --border:       oklch(91%   0.008 75);
+  --border-strong:oklch(82%   0.012 75);
+  --gold:         oklch(78%   0.15  80);
+  --gold-deep:    oklch(62%   0.16  70);
+  --fire:         oklch(64%   0.17  35);
+  --good:         oklch(67%   0.12  155);
+  --cool:         oklch(63%   0.11  235);
+
+  --rule: 0.5px solid var(--border);
+  --row-h: 36px;
+  --cell-w: 44px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(20,18,12,.04), 0 8px 24px -12px rgba(20,18,12,.08);
+}
+
+.dark {
+  --bg:        oklch(16% 0.01 70);
+  --surface:   oklch(20% 0.01 70);
+  --surface-2: oklch(24% 0.01 70);
+  --ink:       oklch(96% 0.005 75);
+  --ink-2:     oklch(82% 0.008 75);
+  --muted:     oklch(60% 0.012 70);
+  --faint:     oklch(40% 0.012 70);
+  --border:    oklch(28% 0.012 70);
+  --border-strong: oklch(36% 0.012 70);
+  --gold:      oklch(80% 0.16 80);
+  --gold-deep: oklch(78% 0.16 70);
+  --fire:      oklch(72% 0.18 35);
+  --good:      oklch(72% 0.13 155);
+  --cool:      oklch(72% 0.13 235);
+  --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 32px -12px rgba(0,0,0,.5);
+}
+
+.density-compact { --row-h: 30px; --cell-w: 38px; }
+.density-regular { --row-h: 36px; --cell-w: 44px; }
+.density-comfy   { --row-h: 44px; --cell-w: 50px; }
