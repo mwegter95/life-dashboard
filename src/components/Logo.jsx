@@ -1,131 +1,114 @@
 /**
- * Life Dashboard logo — speedometer-with-italic-L wordmark.
+ * Life Dashboard logo — speedometer + needle-L + retro blocky wordmark.
  *
- * The "L" of "Life Dashboard" is hand-drawn so the vertical stroke tapers
- * like a real speedometer needle (wide at the pivot, point at the tip).
- * It's italicised about ~15° so the needle points into the upper-right of
- * the dial — the "80 mph" arc. The remaining "ife Dashboard" is rendered
- * in matching italic Instrument Serif so the whole mark reads as one word.
+ *   • There is ONE L in the entire mark — the L of "Life Dashboard".
+ *     Its tall vertical stroke IS the speedometer needle. The L's foot is
+ *     a short horizontal at the dial's pivot height, and "ife Dashboard"
+ *     continues right of it on the same baseline.
+ *   • The dial arc sweeps CCW from 180° to ~71° and stops exactly where the
+ *     needle-stem crosses it — so the arc never overlaps the wordmark text.
+ *   • The "ife Dashboard" text uses Bungee (loaded via Google Fonts) which
+ *     gives the heavy, retro-blocky character of the reference font. A
+ *     three-layer depth-shadow stack behind the front face reads as a clean
+ *     3D extrusion (perspective "into the page").
  *
  * Two exports:
- *   <Logo />     — full wordmark (dial + needle-L + "ife Dashboard")
- *   <LogoMark /> — square icon (dial + needle-L only) for app launchers
- *
- * Both honour `currentColor` so they retint with the theme `--ink`.
+ *   <Logo />     — wide wordmark for the topbar (360 × 80).
+ *   <LogoMark /> — square app-tile (80 × 80). Same geometry, but "ife" sits
+ *                  on the L's baseline and "Dashboard" wraps to a second
+ *                  line, so the FULL wordmark fits inside the square.
  */
 import React from 'react'
 
-/* Shared geometry: dial pivot at (40, 62), outer radius 30.
-   Tick angles measured CCW from positive-X (right):
-     0° = far-right (= max mph), 180° = far-left (= 0 mph).
-   The needle-L points at ~75° from horizontal — visually the "80" arc. */
 const DIAL_CX = 40
 const DIAL_CY = 62
-const DIAL_R = 30
-const DIAL_R_INNER = 24
+const DIAL_R  = 30
+
+/* Where the L's stem crosses the dial circle (angle ≈ 71° from +x, y inverted). */
+const ARC_END_X = DIAL_CX + 9.7   // 30 · cos(71°)
+const ARC_END_Y = DIAL_CY - 28.4  // 30 · sin(71°)
+
+const MAJOR_TICKS = [180, 150, 120, 90]
+const MINOR_TICKS = [170, 160, 140, 130, 110, 100, 80]
 
 function pointOnArc(angleDeg, radius) {
   const a = (Math.PI / 180) * angleDeg
   return [DIAL_CX + radius * Math.cos(a), DIAL_CY - radius * Math.sin(a)]
 }
 
-const MAJOR_TICKS = [0, 30, 60, 90, 120, 150, 180]
-const MINOR_TICKS = [10, 20, 40, 50, 70, 80, 100, 110, 130, 140, 160, 170]
-
-// Shared dial + needle-L group. Rendered with `currentColor` for theming.
+/* Speedometer dial + the letter L — where L's stem doubles as the needle.
+   Geometry is in the source units of the wordmark viewBox; consumers wrap
+   this in a <g transform="…"> to scale / translate it. */
 function DialAndNeedleL() {
   return (
     <g>
-      {/* Outer arc (the dial face) */}
+      {/* Arc — stops at the needle. */}
       <path
-        d={`M ${DIAL_CX - DIAL_R} ${DIAL_CY} A ${DIAL_R} ${DIAL_R} 0 0 1 ${DIAL_CX + DIAL_R} ${DIAL_CY}`}
+        d={`M ${DIAL_CX - DIAL_R} ${DIAL_CY} A ${DIAL_R} ${DIAL_R} 0 0 1 ${ARC_END_X} ${ARC_END_Y}`}
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.4"
+        strokeWidth="1.6"
         strokeLinecap="round"
-        opacity="0.85"
-      />
-      {/* Inner subtle arc for depth */}
-      <path
-        d={`M ${DIAL_CX - DIAL_R_INNER} ${DIAL_CY} A ${DIAL_R_INNER} ${DIAL_R_INNER} 0 0 1 ${DIAL_CX + DIAL_R_INNER} ${DIAL_CY}`}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.5"
-        opacity="0.35"
+        opacity="0.9"
       />
 
-      {/* Major ticks */}
       {MAJOR_TICKS.map(deg => {
         const [x1, y1] = pointOnArc(deg, DIAL_R)
         const [x2, y2] = pointOnArc(deg, DIAL_R - 5)
         return (
-          <line
-            key={`maj-${deg}`}
+          <line key={`maj-${deg}`}
             x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke="currentColor"
-            strokeWidth="1.3"
-            strokeLinecap="round"
-            opacity="0.7"
-          />
+            stroke="currentColor" strokeWidth="1.4"
+            strokeLinecap="round" opacity="0.75" />
         )
       })}
 
-      {/* Minor ticks */}
       {MINOR_TICKS.map(deg => {
         const [x1, y1] = pointOnArc(deg, DIAL_R)
         const [x2, y2] = pointOnArc(deg, DIAL_R - 2.5)
         return (
-          <line
-            key={`min-${deg}`}
+          <line key={`min-${deg}`}
             x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke="currentColor"
-            strokeWidth="0.7"
-            strokeLinecap="round"
-            opacity="0.45"
-          />
+            stroke="currentColor" strokeWidth="0.8"
+            strokeLinecap="round" opacity="0.5" />
         )
       })}
 
-      {/* "80" callout near where the needle-L points */}
-      <text
-        x={DIAL_CX + 21}
-        y={DIAL_CY - 22}
-        fontFamily='"Geist Mono", ui-monospace, monospace'
-        fontSize="6.5"
-        fontWeight="600"
-        fill="currentColor"
-        textAnchor="middle"
-        opacity="0.85"
-      >80</text>
-
-      {/* The needle-L — drawn as a single filled path.
-          Foot: thin horizontal bar from the pivot extending right.
-          Stem: needle-tapered shape from pivot up to a point, slanted
-                ~16° to read as italic and point at the "80" arc.
-          Pivot is at (40, 62); stem top is at (~52, 28). */}
+      {/* The letter L — foot + needle-stem. The stem rises from the pivot
+          to (~52, 28) at ~71° and is tapered, so it reads as a needle while
+          remaining the recognisable vertical of an L. */}
       <g fill="currentColor">
-        {/* L's foot — has a subtle italic skew to match the wordmark */}
         <path d="M 40 62 L 62 62 L 62 65 L 43.2 65 Z" />
-        {/* L's stem — needle-tapered, ~16° italic slant */}
-        <path d="
-          M 40 62
-          L 44 62
-          L 53.2 30
-          L 52.4 28
-          L 51.6 28
-          L 50.8 30
-          Z" />
-        {/* Pivot disc — caps the bottom of the needle */}
+        <path d="M 40 62 L 44 62 L 53.2 30 L 52.4 28 L 51.6 28 L 50.8 30 Z" />
         <circle cx={DIAL_CX} cy={DIAL_CY} r="2.6" />
-        {/* Tiny inner highlight on the pivot */}
-        <circle cx={DIAL_CX - 0.6} cy={DIAL_CY - 0.6} r="0.9" fill="var(--bg, #fff)" opacity="0.75" />
       </g>
     </g>
   )
 }
 
-/* Wordmark: dial + needle-L + "ife Dashboard".
-   ViewBox is 360×80 (height × ~4.5 aspect). */
+/* Block-text renderer: front face on top, three darker offset clones behind
+   it. The offset is +1/+2/+3 down-and-right → reads as extrusion into the
+   page. Letter-spacing slightly negative tightens the line so the depth
+   shadows of adjacent letters don't visually merge. */
+function BlockyText({ x, y, fontSize, children, anchor = 'start', shadow = 'rgba(0,0,0,0.55)' }) {
+  const common = {
+    fontFamily: '"Bungee", Impact, "Arial Black", sans-serif',
+    fontWeight: 400, // Bungee ships at 400; weight does nothing for it
+    fontSize,
+    letterSpacing: '-0.01em',
+    textAnchor: anchor,
+  }
+  return (
+    <g>
+      <text x={x + 3} y={y + 3} fill={shadow} opacity="0.55" {...common}>{children}</text>
+      <text x={x + 2} y={y + 2} fill={shadow} opacity="0.75" {...common}>{children}</text>
+      <text x={x + 1} y={y + 1} fill={shadow} opacity="0.90" {...common}>{children}</text>
+      <text x={x}     y={y}     fill="currentColor"          {...common}>{children}</text>
+    </g>
+  )
+}
+
+/* Wordmark: dial + L + "ife Dashboard". L IS the needle. */
 export function Logo({ height = 26, color, className = '', title = 'Life Dashboard' }) {
   const aspect = 360 / 80
   return (
@@ -139,23 +122,18 @@ export function Logo({ height = 26, color, className = '', title = 'Life Dashboa
       style={color ? { color } : undefined}
     >
       <DialAndNeedleL />
-      {/* "ife Dashboard" — italic Instrument Serif, matches the L's slant */}
-      <text
-        x="68"
-        y="62"
-        fontFamily='"Instrument Serif", Georgia, serif'
-        fontStyle="italic"
-        fontSize="48"
-        fontWeight="400"
-        letterSpacing="-0.01em"
-        fill="currentColor"
-      >ife Dashboard</text>
+      <BlockyText x={70} y={64} fontSize={34}>ife Dashboard</BlockyText>
     </svg>
   )
 }
 
-/* Square mark for app launchers / favicon-like uses. Just the dial + L.
-   Optional rounded background tile via `background` prop. */
+/* Square mark — holds the FULL wordmark by wrapping after "ife".
+   Layout:
+     row 1 (y=46 baseline): [dial+L]  ife
+     row 2 (y=70 baseline): Dashboard
+   The dial is scaled 0.6 and translated so the L's foot sits on row 1's
+   baseline. "ife" continues right of the L's foot. "Dashboard" wraps and
+   is centred horizontally on row 2. */
 export function LogoMark({
   size = 64,
   color,
@@ -174,9 +152,18 @@ export function LogoMark({
       style={color ? { color } : undefined}
     >
       {background && (
-        <rect x="0" y="0" width="80" height="80" rx="14" fill={background} />
+        <rect x="0" y="0" width="80" height="80" rx="10" fill={background} />
       )}
-      <DialAndNeedleL />
+
+      {/* Scale-0.6 places pivot at (24, 37.2), arc ends at (29.8, 17), foot ends at (37.2, 37.2). */}
+      <g transform="translate(0, 9) scale(0.6)">
+        <DialAndNeedleL />
+      </g>
+
+      {/* "ife" — right of the L's foot, sharing its baseline (y≈46.2). */}
+      <BlockyText x={39} y={46} fontSize={11}>ife</BlockyText>
+      {/* "Dashboard" — second line, centred under the whole mark. */}
+      <BlockyText x={40} y={70} fontSize={11} anchor="middle">Dashboard</BlockyText>
     </svg>
   )
 }

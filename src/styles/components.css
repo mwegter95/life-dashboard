@@ -616,12 +616,27 @@
   .topbar .right { gap: 6px; }
   .stat-pill { padding: 6px 9px; }
   .stat-pill .label { display: none; }
-  .main { padding: 16px; gap: 16px; }
-  :root { --cell-w: 36px; }
+  .main { padding: 16px 12px; gap: 16px; }
+  :root { --cell-w: 32px; }
+  /* Tighter than the desktop grid so the whole week fits in an iPhone-Pro
+     viewport (≈393px) without horizontal scroll.
+     80 + 7×32 + 44 = 348px content  +  24px padding  =  372px total. */
   .week-hd, .week-row {
-    grid-template-columns: 90px repeat(7, var(--cell-w)) 48px;
+    grid-template-columns: 80px repeat(7, var(--cell-w)) 44px;
   }
+  .week-hd { padding-left: 12px; }
+  .week-hd .total-col { padding-right: 12px; }
   .week-hd .day { font-size: 9px; }
   .week-row .label .name { font-size: 12.5px; }
   .reminders { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* Smallest phones (older iPhone SE / narrow Android). Goes a notch tighter
+   so even at 360px nothing clips. */
+@media (max-width: 380px) {
+  :root { --cell-w: 28px; }
+  .week-hd, .week-row {
+    grid-template-columns: 72px repeat(7, var(--cell-w)) 40px;
+  }
+  .main { padding: 14px 10px; }
 }
