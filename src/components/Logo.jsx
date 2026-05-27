@@ -36,11 +36,7 @@ function ItalicText({ x, y, fontSize, anchor = 'start', filterId, children }) {
       fontFamily={FONT_STACK}
       fontSize={fontSize}
       textAnchor={anchor}
-      fill="#ffffff"
-      stroke="currentColor"
-      strokeWidth={fontSize * 0.045}
-      strokeLinejoin="round"
-      paintOrder="stroke fill"
+      fill="currentColor"
       filter={`url(#${filterId})`}
       transform={`translate(${x} ${y}) skewX(${SKEW_DEG}) translate(${-x} ${-y})`}
     >
