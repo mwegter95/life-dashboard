@@ -10,7 +10,7 @@ export function Topbar({
   return (
     <header className="topbar">
       <div className="brand">
-        <Logo height={26} />
+        <Logo height={44} />
         <span className="date">· {dateStr}</span>
       </div>
       <div className="center">
