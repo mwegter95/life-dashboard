@@ -83,9 +83,25 @@ function Dial({ cx, cy, radius, dx, capHeight, tickScale = 1 }) {
 }
 
 function ShadowFilter({ id }) {
+  // Build outline + shadow from SourceAlpha so we only affect the *filled*
+  // white letter bodies — never the transparent inner groove channels that
+  // Cleptograph 3D uses for its 3D depth effect.
   return (
-    <filter id={id} x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="2" dy="0" stdDeviation="0" floodColor="black" />
+    <filter id={id} x="-20%" y="-15%" width="150%" height="130%">
+      {/* Expand the filled alpha → outline region */}
+      <feMorphology operator="dilate" radius="1" in="SourceAlpha" result="expanded"/>
+      <feFlood floodColor="black" result="black"/>
+      {/* Outline: black fill masked to the expanded shape */}
+      <feComposite in="black" in2="expanded" operator="in" result="outline"/>
+      {/* Shadow: same expanded shape shifted right */}
+      <feOffset dx="2.5" dy="0" in="expanded" result="shadowPos"/>
+      <feComposite in="black" in2="shadowPos" operator="in" result="shadow"/>
+      {/* Layer order: shadow → outline → original white fill */}
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="outline"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   )
 }
