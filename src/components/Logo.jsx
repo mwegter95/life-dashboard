@@ -36,7 +36,7 @@ function ItalicText({ x, y, fontSize, anchor = 'start', filterId, children }) {
       fontFamily={FONT_STACK}
       fontSize={fontSize}
       textAnchor={anchor}
-      fill="currentColor"
+      fill="#ffffff"
       filter={`url(#${filterId})`}
       transform={`translate(${x} ${y}) skewX(${SKEW_DEG}) translate(${-x} ${-y})`}
     >
