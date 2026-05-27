@@ -1,116 +1,109 @@
 /**
- * Life Dashboard logo — speedometer + needle-L + retro blocky wordmark.
+ * Life Dashboard logo — Cleptograph 3D wordmark with an italic-L needle.
  *
- *   • There is ONE L in the entire mark — the L of "Life Dashboard".
- *     Its tall vertical stroke IS the speedometer needle. The L's foot is
- *     a short horizontal at the dial's pivot height, and "ife Dashboard"
- *     continues right of it on the same baseline.
- *   • The dial arc sweeps CCW from 180° to ~71° and stops exactly where the
- *     needle-stem crosses it — so the arc never overlaps the wordmark text.
- *   • The "ife Dashboard" text uses Bungee (loaded via Google Fonts) which
- *     gives the heavy, retro-blocky character of the reference font. A
- *     three-layer depth-shadow stack behind the front face reads as a clean
- *     3D extrusion (perspective "into the page").
+ * The actual L glyph from the Cleptograph 3D font is rendered as the needle:
+ *   • `transform="skewX(-14)"` around its baseline-left anchor leans the top
+ *     of the L's stem to the right, reading as an italic-needle pointing at
+ *     the speedometer's upper-right.
+ *   • The dial arc sweeps from 180° to ~76° (the angle of the skewed L) so
+ *     the arc terminates exactly at the needle's tip — no overlap with text.
+ *   • Cleptograph 3D bakes the chunky 3D extrusion into every glyph; we use
+ *     it for the whole wordmark.
  *
- * Two exports:
- *   <Logo />     — wide wordmark for the topbar (360 × 80).
- *   <LogoMark /> — square app-tile (80 × 80). Same geometry, but "ife" sits
- *                  on the L's baseline and "Dashboard" wraps to a second
- *                  line, so the FULL wordmark fits inside the square.
+ * The font is uppercase-only — lowercase code maps to uppercase glyphs at
+ * render time, which is intentional ("Life Dashboard" reads as "LIFE
+ * DASHBOARD" in the mark).
+ *
+ * Exports:
+ *   <Logo />     — 360 × 80 wordmark, single line.
+ *   <LogoMark /> — 80 × 80 tile. "L + ife" on row 1, "Dashboard" on row 2.
  */
 import React from 'react'
 
-const DIAL_CX = 40
-const DIAL_CY = 62
-const DIAL_R  = 30
+const FONT_STACK = '"Cleptograph 3D", "Bungee", Impact, "Arial Black", sans-serif'
+const SKEW_DEG = -14
 
-/* Where the L's stem crosses the dial circle (angle ≈ 71° from +x, y inverted). */
-const ARC_END_X = DIAL_CX + 9.7   // 30 · cos(71°)
-const ARC_END_Y = DIAL_CY - 28.4  // 30 · sin(71°)
+/* For an italic L at fontSize fs with a skew of α°:
+ *   needleLength = capHeight / cos(α)   ≈ fs · 0.7 / 0.97
+ * Setting dial radius = needleLength puts the L's tip exactly on the arc.
+ * arcEndDx = capHeight · tan(α);  arcEndDy = capHeight.
+ */
+const CAP_RATIO = 0.7                                  // capHeight / fontSize for Cleptograph
+const skewRad = (SKEW_DEG * Math.PI) / 180
+const TAN_SKEW = Math.tan(skewRad)                     // ≈ -0.249
+const COS_SKEW = Math.cos(skewRad)                     // ≈ 0.970
 
-const MAJOR_TICKS = [180, 150, 120, 90]
-const MINOR_TICKS = [170, 160, 140, 130, 110, 100, 80]
-
-function pointOnArc(angleDeg, radius) {
-  const a = (Math.PI / 180) * angleDeg
-  return [DIAL_CX + radius * Math.cos(a), DIAL_CY - radius * Math.sin(a)]
+function dialFor(fontSize) {
+  const capHeight = fontSize * CAP_RATIO
+  const dx = capHeight * Math.abs(TAN_SKEW)            // horizontal lean at top
+  const radius = capHeight / COS_SKEW                  // matches needle length
+  return { capHeight, dx, radius }
 }
 
-/* Speedometer dial + the letter L — where L's stem doubles as the needle.
-   Geometry is in the source units of the wordmark viewBox; consumers wrap
-   this in a <g transform="…"> to scale / translate it. */
-function DialAndNeedleL() {
-  return (
-    <g>
-      {/* Arc — stops at the needle. */}
-      <path
-        d={`M ${DIAL_CX - DIAL_R} ${DIAL_CY} A ${DIAL_R} ${DIAL_R} 0 0 1 ${ARC_END_X} ${ARC_END_Y}`}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-
-      {MAJOR_TICKS.map(deg => {
-        const [x1, y1] = pointOnArc(deg, DIAL_R)
-        const [x2, y2] = pointOnArc(deg, DIAL_R - 5)
-        return (
-          <line key={`maj-${deg}`}
-            x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke="currentColor" strokeWidth="1.4"
-            strokeLinecap="round" opacity="0.75" />
-        )
-      })}
-
-      {MINOR_TICKS.map(deg => {
-        const [x1, y1] = pointOnArc(deg, DIAL_R)
-        const [x2, y2] = pointOnArc(deg, DIAL_R - 2.5)
-        return (
-          <line key={`min-${deg}`}
-            x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke="currentColor" strokeWidth="0.8"
-            strokeLinecap="round" opacity="0.5" />
-        )
-      })}
-
-      {/* The letter L — foot + needle-stem. The stem rises from the pivot
-          to (~52, 28) at ~71° and is tapered, so it reads as a needle while
-          remaining the recognisable vertical of an L. */}
-      <g fill="currentColor">
-        <path d="M 40 62 L 62 62 L 62 65 L 43.2 65 Z" />
-        <path d="M 40 62 L 44 62 L 53.2 30 L 52.4 28 L 51.6 28 L 50.8 30 Z" />
-        <circle cx={DIAL_CX} cy={DIAL_CY} r="2.6" />
-      </g>
-    </g>
-  )
-}
-
-/* Block-text renderer: front face on top, three darker offset clones behind
-   it. The offset is +1/+2/+3 down-and-right → reads as extrusion into the
-   page. Letter-spacing slightly negative tightens the line so the depth
-   shadows of adjacent letters don't visually merge. */
-function BlockyText({ x, y, fontSize, children, anchor = 'start', shadow = 'rgba(0,0,0,0.55)' }) {
-  const common = {
-    fontFamily: '"Bungee", Impact, "Arial Black", sans-serif',
-    fontWeight: 400, // Bungee ships at 400; weight does nothing for it
-    fontSize,
-    letterSpacing: '-0.01em',
-    textAnchor: anchor,
+/* Renders the dial arc + tick marks + pivot disc, centred on (cx, cy).
+   The arc starts at 180° (cx - r, cy) and ends where the italic-L's tip lies
+   on the circle. */
+function Dial({ cx, cy, radius, dx, capHeight, tickScale = 1 }) {
+  // Arc terminates at the L's tip in user-space units.
+  const endX = cx + dx
+  const endY = cy - capHeight
+  // Major/minor tick angles in the visible arc range (between 180° and the L).
+  const majors = [180, 150, 120, 90]
+  const minors = [170, 160, 140, 130, 110, 100, 80]
+  const pt = (deg, r) => {
+    const a = (Math.PI / 180) * deg
+    return [cx + r * Math.cos(a), cy - r * Math.sin(a)]
   }
   return (
     <g>
-      <text x={x + 3} y={y + 3} fill={shadow} opacity="0.55" {...common}>{children}</text>
-      <text x={x + 2} y={y + 2} fill={shadow} opacity="0.75" {...common}>{children}</text>
-      <text x={x + 1} y={y + 1} fill={shadow} opacity="0.90" {...common}>{children}</text>
-      <text x={x}     y={y}     fill="currentColor"          {...common}>{children}</text>
+      <path
+        d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${endX} ${endY}`}
+        fill="none" stroke="currentColor"
+        strokeWidth={1.4 * tickScale}
+        strokeLinecap="round" opacity="0.9"
+      />
+      {majors.map(deg => {
+        const [x1, y1] = pt(deg, radius)
+        const [x2, y2] = pt(deg, radius - radius * 0.18)
+        return <line key={`maj-${deg}`} x1={x1} y1={y1} x2={x2} y2={y2}
+          stroke="currentColor" strokeWidth={1.2 * tickScale}
+          strokeLinecap="round" opacity="0.75" />
+      })}
+      {minors.map(deg => {
+        const [x1, y1] = pt(deg, radius)
+        const [x2, y2] = pt(deg, radius - radius * 0.09)
+        return <line key={`min-${deg}`} x1={x1} y1={y1} x2={x2} y2={y2}
+          stroke="currentColor" strokeWidth={0.7 * tickScale}
+          strokeLinecap="round" opacity="0.5" />
+      })}
+      <circle cx={cx} cy={cy} r={radius * 0.09} fill="currentColor" />
     </g>
   )
 }
 
-/* Wordmark: dial + L + "ife Dashboard". L IS the needle. */
+/* The italic L — the font's L tilted to act as the speedometer needle. */
+function ItalicNeedleL({ x, y, fontSize }) {
+  return (
+    <text
+      x={x} y={y}
+      fontFamily={FONT_STACK}
+      fontSize={fontSize}
+      fill="currentColor"
+      transform={`translate(${x} ${y}) skewX(${SKEW_DEG}) translate(${-x} ${-y})`}
+    >L</text>
+  )
+}
+
+/* Wide wordmark — single line. */
 export function Logo({ height = 26, color, className = '', title = 'Life Dashboard' }) {
   const aspect = 360 / 80
+  const FS = 28                                        // tuned to fit "ife Dashboard" in 360
+  const { capHeight, dx, radius } = dialFor(FS)
+  const PIVOT_X = 40
+  const BASELINE = 60
+  // "ife" starts past the L's advance width. Cleptograph 3D is wide
+  // (≈ 1.06 × fontSize per cap), then a small visual gap.
+  const REST_X = PIVOT_X + FS * 1.15
   return (
     <svg
       className={`life-dashboard-logo ${className}`}
@@ -121,19 +114,16 @@ export function Logo({ height = 26, color, className = '', title = 'Life Dashboa
       aria-label={title}
       style={color ? { color } : undefined}
     >
-      <DialAndNeedleL />
-      <BlockyText x={70} y={64} fontSize={34}>ife Dashboard</BlockyText>
+      <Dial cx={PIVOT_X} cy={BASELINE} radius={radius} dx={dx} capHeight={capHeight} />
+      <ItalicNeedleL x={PIVOT_X} y={BASELINE} fontSize={FS} />
+      <text x={REST_X} y={BASELINE} fontFamily={FONT_STACK} fontSize={FS} fill="currentColor">
+        ife Dashboard
+      </text>
     </svg>
   )
 }
 
-/* Square mark — holds the FULL wordmark by wrapping after "ife".
-   Layout:
-     row 1 (y=46 baseline): [dial+L]  ife
-     row 2 (y=70 baseline): Dashboard
-   The dial is scaled 0.6 and translated so the L's foot sits on row 1's
-   baseline. "ife" continues right of the L's foot. "Dashboard" wraps and
-   is centred horizontally on row 2. */
+/* Square tile — "L + ife" on row 1, "Dashboard" centred on row 2. */
 export function LogoMark({
   size = 64,
   color,
@@ -141,6 +131,13 @@ export function LogoMark({
   className = '',
   title = 'Life Dashboard',
 }) {
+  const FS1 = 14                                       // row 1 font size
+  const FS2 = 8                                        // row 2 font size — DASHBOARD fits in 80 at 8
+  const { capHeight, dx, radius } = dialFor(FS1)
+  const PIVOT_X = 14
+  const PIVOT_Y = 30                                   // row 1 baseline; arc top at y ≈ 20
+  const REST_X = PIVOT_X + FS1 * 1.15
+  const ROW2_BASELINE = 66
   return (
     <svg
       className={`life-dashboard-logomark ${className}`}
@@ -151,19 +148,12 @@ export function LogoMark({
       aria-label={title}
       style={color ? { color } : undefined}
     >
-      {background && (
-        <rect x="0" y="0" width="80" height="80" rx="10" fill={background} />
-      )}
-
-      {/* Scale-0.6 places pivot at (24, 37.2), arc ends at (29.8, 17), foot ends at (37.2, 37.2). */}
-      <g transform="translate(0, 9) scale(0.6)">
-        <DialAndNeedleL />
-      </g>
-
-      {/* "ife" — right of the L's foot, sharing its baseline (y≈46.2). */}
-      <BlockyText x={39} y={46} fontSize={11}>ife</BlockyText>
-      {/* "Dashboard" — second line, centred under the whole mark. */}
-      <BlockyText x={40} y={70} fontSize={11} anchor="middle">Dashboard</BlockyText>
+      {background && <rect x="0" y="0" width="80" height="80" rx="10" fill={background} />}
+      <Dial cx={PIVOT_X} cy={PIVOT_Y} radius={radius} dx={dx} capHeight={capHeight} tickScale={0.9} />
+      <ItalicNeedleL x={PIVOT_X} y={PIVOT_Y} fontSize={FS1} />
+      <text x={REST_X} y={PIVOT_Y} fontFamily={FONT_STACK} fontSize={FS1} fill="currentColor">ife</text>
+      <text x={40} y={ROW2_BASELINE} fontFamily={FONT_STACK} fontSize={FS2}
+            textAnchor="middle" fill="currentColor">Dashboard</text>
     </svg>
   )
 }
