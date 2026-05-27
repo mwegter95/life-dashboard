@@ -89,7 +89,7 @@ function Dial({ cx, cy, radius, dx, capHeight, tickScale = 1 }) {
 function ShadowFilter({ id }) {
   return (
     <filter id={id} x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="1.2" dy="1.2" stdDeviation="0.4" floodColor="rgba(0,0,0,0.45)" />
+      <feDropShadow dx="2" dy="0" stdDeviation="0" floodColor="black" />
     </filter>
   )
 }
