@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Checkbox } from './Checkbox.jsx'
 import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
@@ -8,12 +8,30 @@ export function TodayPanel({
   habits, completions, todayISO, dateStr, onToggle, starStyle,
   scoreToday, possibleToday,
 }) {
+  const [showOffSchedule, setShowOffSchedule] = useState(false)
+
   const dueToday = habits.filter(h =>
     isDueOn(h, todayISO) ||
     (h.freq?.kind === 'date' && h.freq.date < todayISO && !isDoneFor(h, h.freq.date, completions))
   )
   const remaining = dueToday.filter(h => !isDoneFor(h, todayISO, completions))
   const done = dueToday.filter(h => isDoneFor(h, todayISO, completions))
+
+  // Off-schedule habits — recurring habits that aren't due today but can still
+  // be logged "I did it anyway" (e.g. watered the plants on a non-Sunday for a
+  // Sunday habit). Completing one records it on today's date, awards points,
+  // and — thanks to window-based streaks — counts toward the period's streak.
+  const dueIds = new Set(dueToday.map(h => h.id))
+  const offSchedule = habits
+    .filter(h => {
+      if (dueIds.has(h.id)) return false
+      const k = h.freq?.kind
+      if (k === 'daily' || k === 'weekdays' || k === 'every_n') return true
+      return isDoneFor(h, todayISO, completions) // surface anything already logged today
+    })
+    .sort((a, b) =>
+      Number(isDoneFor(a, todayISO, completions)) - Number(isDoneFor(b, todayISO, completions))
+    )
 
   const groups = useMemo(() => {
     const m = new Map()
@@ -79,6 +97,38 @@ export function TodayPanel({
                 starStyle={starStyle}
               />
             ))}
+          </div>
+        )}
+
+        {offSchedule.length > 0 && (
+          <div className="off-schedule">
+            <button
+              type="button"
+              className="off-schedule-toggle"
+              aria-expanded={showOffSchedule}
+              onClick={() => setShowOffSchedule(v => !v)}
+            >
+              <span className={'chev' + (showOffSchedule ? ' open' : '')}>›</span>
+              Did one anyway? Log an off-day habit
+              <span className="count">{offSchedule.length}</span>
+            </button>
+            {showOffSchedule && (
+              <div className="off-schedule-list">
+                <div className="off-schedule-hint">
+                  Not scheduled today — check it to log it now. You still earn points and keep the streak going.
+                </div>
+                {offSchedule.map(h => (
+                  <TaskRow
+                    key={h.id}
+                    habit={h}
+                    dateISO={todayISO}
+                    completions={completions}
+                    onToggle={onToggle}
+                    starStyle={starStyle}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

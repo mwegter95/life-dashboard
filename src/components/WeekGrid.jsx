@@ -99,10 +99,15 @@ function WeekRow({ habit, days, completions, todayISO, onToggle, onEdit, onDelet
       </div>
       {days.map((d, idx) => {
         const due = isDueOn(habit, d.iso)
-        const done = due && isDoneFor(habit, d.iso, completions)
-        const c = done ? getCompletion(habit, d.iso, completions) : null
-        const bonus = c && typeof c === 'object' && c.bonus
         const isFuture = d.iso > todayISO
+        const loggedHere = isDoneFor(habit, d.iso, completions)
+        const done = due && loggedHere
+        // An off-day completion: a day the habit wasn't due but was logged
+        // anyway (e.g. a Sunday habit done on Thursday). Show it faintly so
+        // the credit is visible in the grid.
+        const offDone = !due && loggedHere
+        const c = (done || offDone) ? getCompletion(habit, d.iso, completions) : null
+        const bonus = c && typeof c === 'object' && c.bonus
         const missed = due && !done && d.iso < todayISO
         const isToday = d.iso === todayISO
         const nextIso = days[idx + 1]?.iso
@@ -115,6 +120,7 @@ function WeekRow({ habit, days, completions, todayISO, onToggle, onEdit, onDelet
           + (isFuture ? ' future' : '')
           + (isToday ? ' today' : '')
           + (done ? ' done' : '')
+          + (offDone ? ' off-done' : '')
           + (bonus ? ' bonus' : '')
           + (missed ? ' missed' : '')
 
@@ -127,6 +133,16 @@ function WeekRow({ habit, days, completions, todayISO, onToggle, onEdit, onDelet
                 aria-label="toggle completion"
               >
                 {done ? <span className="mark">★</span> : <span className="mark">·</span>}
+              </button>
+            )}
+            {offDone && (
+              <button
+                className="cell-btn"
+                onClick={(e) => onToggle(habit, d.iso, e)}
+                aria-label="toggle off-day completion"
+                title="Logged on an off day"
+              >
+                <span className="mark off">✦</span>
               </button>
             )}
             {due && isFuture && <span className="mark">·</span>}

@@ -25,6 +25,11 @@
   font-weight: 600; letter-spacing: -0.01em;
 }
 .topbar .brand .logo { display: block; height: 44px; width: auto; color: var(--ink); }
+/* Desktop wordmark — larger so it commands the navbar. Mobile is overridden
+   smaller in the max-width:720px block below. (Class is .life-dashboard-logo;
+   CSS height + width:auto overrides the SVG's intrinsic attrs while keeping
+   the viewBox aspect ratio.) */
+.topbar .brand .life-dashboard-logo { display: block; height: 64px; width: auto; color: var(--ink); }
 .topbar .date { color: var(--muted); font-size: 13px; }
 .topbar .center { display: flex; gap: 14px; align-items: center; justify-self: center; }
 .topbar .right { display: flex; gap: 10px; align-items: center; justify-self: end; }
@@ -188,6 +193,26 @@
 .task-empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 .task-empty .serif { font-size: 18px; display: block; margin-bottom: 6px; color: var(--ink-2); }
 
+/* ── Off-schedule "log it anyway" section ── */
+.off-schedule { margin-top: 6px; border-top: 1px dashed var(--rule-color, rgba(0,0,0,0.08)); }
+.off-schedule-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 12px 16px; background: none; border: none; cursor: pointer;
+  font: inherit; font-size: 12px; color: var(--muted); text-align: left;
+}
+.off-schedule-toggle:hover { color: var(--ink-2); }
+.off-schedule-toggle .chev {
+  display: inline-block; transition: transform 0.15s; font-size: 14px; line-height: 1;
+}
+.off-schedule-toggle .chev.open { transform: rotate(90deg); }
+.off-schedule-toggle .count {
+  margin-left: auto; font-size: 11px; color: var(--faint);
+  background: var(--surface); border: var(--rule); border-radius: 999px; padding: 1px 8px;
+}
+.off-schedule-hint {
+  padding: 2px 16px 8px; font-size: 11.5px; color: var(--faint); line-height: 1.4;
+}
+
 /* ─────────────────────────── Week grid ─────────────────────────── */
 .week {
   background: var(--surface);
@@ -261,6 +286,10 @@
   opacity: .35;
 }
 .cell.future { opacity: .55; }
+/* Off-day completion: habit logged on a day it wasn't due. Lift the
+   striped not-due dimming and show a faint accent star. */
+.cell.off-done { opacity: 1; }
+.cell.off-done .mark.off { color: var(--gold-deep); opacity: .65; font-size: 13px; }
 .cell .mark { color: var(--faint); font-family: "Geist Mono", monospace; font-size: 13px; position: relative; z-index: 2; }
 .cell.done .mark { color: var(--gold-deep); font-size: 16px; line-height: 1; }
 .cell.bonus .mark { color: var(--gold-deep); text-shadow: 0 0 12px var(--gold); }
@@ -612,6 +641,8 @@
 /* ─────────────────────────── mobile tweaks ─────────────────────────── */
 @media (max-width: 720px) {
   .topbar { grid-template-columns: 1fr auto; gap: 12px; padding: 14px 16px; }
+  /* Keep the wordmark compact on mobile — desktop uses the larger 64px size */
+  .topbar .brand .life-dashboard-logo { height: 44px; }
   .topbar .center { display: none; }
   .topbar .right { gap: 6px; }
   .stat-pill { padding: 6px 9px; }
