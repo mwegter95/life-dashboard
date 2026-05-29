@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
 } from '../lib/frequency.js'
@@ -9,6 +9,12 @@ import { Icon } from './Icons.jsx'
 export function WeekGrid({
   habits, completions, weekStartISO, todayISO, onToggle, onEdit, onDelete,
 }) {
+  // Edit mode gates star removal. In normal mode a stray tap can only *add* a
+  // star (a safe, reversible action); removing one — or adding an off-day star
+  // on a non-scheduled day — requires turning on Edit, so nothing gets deleted
+  // by accident.
+  const [editMode, setEditMode] = useState(false)
+
   const days = useMemo(() => {
     const out = []
     const start = fromISODate(weekStartISO)
@@ -36,11 +42,22 @@ export function WeekGrid({
   }, [habits, completions, days])
 
   return (
-    <div className="week">
+    <div className={'week' + (editMode ? ' editing' : '')}>
       <div className="week-hd">
         <div className="title-col">
           <h2>Week</h2>
           <div className="sub">{fmtWeekRange(weekStartISO)}</div>
+          <button
+            type="button"
+            className={'edit-stars-toggle' + (editMode ? ' active' : '')}
+            onClick={() => setEditMode(v => !v)}
+            aria-pressed={editMode}
+            title={editMode
+              ? 'Finish editing — taps will no longer remove stars'
+              : 'Turn on to add or remove stars (incl. off-schedule days)'}
+          >
+            {editMode ? '✓ Done editing' : '✎ Edit stars'}
+          </button>
         </div>
         {days.map(d => (
           <div key={d.iso} className={'day' + (d.iso === todayISO ? ' today' : '')}>
@@ -57,6 +74,7 @@ export function WeekGrid({
           days={days}
           completions={completions}
           todayISO={todayISO}
+          editMode={editMode}
           onToggle={onToggle}
           onEdit={onEdit}
           onDelete={onDelete}
@@ -70,7 +88,7 @@ export function WeekGrid({
   )
 }
 
-function WeekRow({ habit, days, completions, todayISO, onToggle, onEdit, onDelete }) {
+function WeekRow({ habit, days, completions, todayISO, editMode, onToggle, onEdit, onDelete }) {
   const rowTotal = useMemo(() => {
     let earned = 0, possible = 0
     days.forEach(d => {
@@ -106,13 +124,22 @@ function WeekRow({ habit, days, completions, todayISO, onToggle, onEdit, onDelet
         // anyway (e.g. a Sunday habit done on Thursday). Show it faintly so
         // the credit is visible in the grid.
         const offDone = !due && loggedHere
-        const c = (done || offDone) ? getCompletion(habit, d.iso, completions) : null
+        const filled = done || offDone
+        const c = filled ? getCompletion(habit, d.iso, completions) : null
         const bonus = c && typeof c === 'object' && c.bonus
-        const missed = due && !done && d.iso < todayISO
+        const missed = due && !filled && d.iso < todayISO
         const isToday = d.iso === todayISO
         const nextIso = days[idx + 1]?.iso
         const nextDone = nextIso && isDoneFor(habit, nextIso, completions)
         const chainToNext = habit.freq?.kind === 'daily' && done && nextDone
+
+        // Interactivity contract:
+        //  • normal mode → only an empty, *due*, non-future cell is tappable,
+        //    and tapping can only ADD a star (safe, reversible). Filled cells
+        //    are inert so a stray tap can't delete a completion.
+        //  • edit mode → every non-future cell is tappable and toggles freely,
+        //    so you can remove a mis-tap or add an off-schedule star.
+        const interactive = isFuture ? false : (editMode ? true : (due && !filled))
 
         const cls =
           'cell'
@@ -124,28 +151,31 @@ function WeekRow({ habit, days, completions, todayISO, onToggle, onEdit, onDelet
           + (bonus ? ' bonus' : '')
           + (missed ? ' missed' : '')
 
+        let mark = null
+        if (filled) {
+          mark = <span className={'mark' + (offDone ? ' off' : '')}><Icon.Star /></span>
+        } else if (due) {
+          mark = <span className="mark dot">·</span>          // due, not yet done
+        } else if (interactive) {
+          mark = <span className="mark add">+</span>          // edit mode: add off-day star
+        }
+
         return (
           <div key={d.iso} className={cls}>
-            {due && !isFuture && (
+            {interactive ? (
               <button
                 className="cell-btn"
                 onClick={(e) => onToggle(habit, d.iso, e)}
-                aria-label="toggle completion"
+                aria-label={filled ? 'remove star' : 'add star'}
+                title={
+                  filled ? 'Tap to remove'
+                  : due ? 'Tap to mark done'
+                  : 'Tap to log an off-schedule star'
+                }
               >
-                {done ? <span className="mark">★</span> : <span className="mark">·</span>}
+                {mark}
               </button>
-            )}
-            {offDone && (
-              <button
-                className="cell-btn"
-                onClick={(e) => onToggle(habit, d.iso, e)}
-                aria-label="toggle off-day completion"
-                title="Logged on an off day"
-              >
-                <span className="mark off">✦</span>
-              </button>
-            )}
-            {due && isFuture && <span className="mark">·</span>}
+            ) : mark}
             {chainToNext && <ChainLink orient={idx % 2 === 0 ? 'hv' : 'vh'} bonus={bonus} />}
           </div>
         )

@@ -33,4 +33,15 @@ export const Icon = {
       <line x1="12" y1="4" x2="4" y2="12" />
     </svg>
   ),
+  Sun: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="3.1" />
+      <path d="M8 1.4v1.7M8 12.9v1.7M1.4 8h1.7M12.9 8h1.7M3.4 3.4l1.2 1.2M11.4 11.4l1.2 1.2M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2" />
+    </svg>
+  ),
+  Moon: () => (
+    <svg viewBox="0 0 16 16" fill="currentColor">
+      <path d="M13.3 9.9a5.6 5.6 0 0 1-7.2-7.2 5.7 5.7 0 1 0 7.2 7.2z" />
+    </svg>
+  ),
 }

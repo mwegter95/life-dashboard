@@ -63,6 +63,8 @@
 .btn.ghost { background: transparent; }
 .btn.tiny { padding: 4px 8px; font-size: 11.5px; border-radius: 6px; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.icon-only { padding: 8px; }
+.btn.icon-only svg { width: 16px; height: 16px; }
 
 .btn svg { width: 14px; height: 14px; }
 
@@ -227,6 +229,7 @@
   border-bottom: var(--rule);
   align-items: center;
 }
+.week-hd .title-col { display: flex; flex-direction: column; }
 .week-hd .title-col h2 {
   margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--ink-2);
@@ -289,11 +292,22 @@
 /* Off-day completion: habit logged on a day it wasn't due. Lift the
    striped not-due dimming and show a faint accent star. */
 .cell.off-done { opacity: 1; }
-.cell.off-done .mark.off { color: var(--gold-deep); opacity: .65; font-size: 13px; }
-.cell .mark { color: var(--faint); font-family: "Geist Mono", monospace; font-size: 13px; position: relative; z-index: 2; }
-.cell.done .mark { color: var(--gold-deep); font-size: 16px; line-height: 1; }
-.cell.bonus .mark { color: var(--gold-deep); text-shadow: 0 0 12px var(--gold); }
-.cell.missed .mark { color: var(--fire); font-size: 11px; opacity: .8; }
+.cell .mark {
+  color: var(--faint); font-family: "Geist Mono", monospace; font-size: 13px;
+  line-height: 1; position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+}
+/* Stars render as the real 5-point SVG (currentColor fill) so they never look
+   like diamonds; text marks (·, +) keep the mono font. */
+.cell .mark svg { width: 15px; height: 15px; display: block; }
+.cell.done .mark { color: var(--gold-deep); }
+.cell.done .mark svg { width: 17px; height: 17px; }
+.cell.off-done .mark.off { color: var(--gold-deep); opacity: .6; }
+.cell.off-done .mark.off svg { width: 13px; height: 13px; }
+.cell.bonus .mark svg { filter: drop-shadow(0 0 6px var(--gold)); }
+.cell .mark.dot { color: var(--faint); }
+.cell .mark.add { color: var(--gold-deep); opacity: .5; font-size: 15px; }
+.cell.missed .mark { color: var(--fire); opacity: .8; }
 .cell-btn {
   width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
@@ -303,6 +317,27 @@
 .cell-btn:hover { background: var(--surface); }
 .cell.today .cell-btn:hover { background: oklch(from var(--gold) 90% 0.08 80); }
 .cell-btn:active { transform: scale(0.92); }
+
+/* Edit-stars toggle (week header) */
+.week-hd .title-col .edit-stars-toggle {
+  margin-top: 7px; align-self: flex-start;
+  font: inherit; font-size: 11px; font-family: "Geist Mono", monospace;
+  color: var(--muted); background: var(--surface-2);
+  border: var(--rule); border-radius: 999px;
+  padding: 3px 10px; cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.week-hd .title-col .edit-stars-toggle:hover { color: var(--ink-2); border-color: var(--border-strong); }
+.week-hd .title-col .edit-stars-toggle.active {
+  background: var(--gold-deep); color: var(--bg); border-color: var(--gold-deep);
+}
+/* In edit mode every tappable cell shows a faint frame, and hovering a filled
+   one previews removal in a warning tint so deletion is clearly intentional. */
+.week.editing .cell-btn { box-shadow: inset 0 0 0 1px var(--border); }
+.week.editing .cell.done .cell-btn:hover,
+.week.editing .cell.off-done .cell-btn:hover {
+  background: oklch(from var(--fire) 92% 0.06 35 / 0.5);
+}
 
 .chain-link {
   position: absolute;

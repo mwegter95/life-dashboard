@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Logo } from './Logo.jsx'
 import { Icon } from './Icons.jsx'
+import { getInitialTheme, setTheme } from '../lib/theme.js'
 
 export function Topbar({
   dateStr,
@@ -7,6 +9,14 @@ export function Topbar({
   onAdd,
   authSlot,
 }) {
+  // main.jsx already applied this theme to <html>; mirror it locally so the
+  // toggle icon stays in sync.
+  const [theme, setThemeState] = useState(getInitialTheme)
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setThemeState(next)
+    setTheme(next)
+  }
   return (
     <header className="topbar">
       <div className="brand">
@@ -38,6 +48,14 @@ export function Topbar({
         </span>
       </div>
       <div className="right">
+        <button
+          className="btn icon-only theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        >
+          {theme === 'dark' ? <Icon.Sun /> : <Icon.Moon />}
+        </button>
         {authSlot}
         <button className="btn primary" onClick={onAdd}>
           <Icon.Plus /> Add habit

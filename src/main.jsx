@@ -1,10 +1,14 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import { applyTheme, getInitialTheme } from './lib/theme.js'
 
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
+
+/* Apply the saved / system theme before first paint to avoid a light-mode flash. */
+applyTheme(getInitialTheme())
 
 /* ── Embed-mode height broadcaster ──────────────────────────────────────────
  * When this app is iframed (e.g. inside michaelwegter.com/apps/life-dashboard),
