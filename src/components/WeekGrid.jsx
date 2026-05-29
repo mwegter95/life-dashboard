@@ -14,6 +14,10 @@ export function WeekGrid({
   // on a non-scheduled day — requires turning on Edit, so nothing gets deleted
   // by accident.
   const [editMode, setEditMode] = useState(false)
+  // Row-edit mode gates the per-habit edit/delete buttons the same way, so a
+  // stray click can't open the editor or delete a habit. Off by default; the
+  // buttons only appear (in the label, clear of the star grid) when it's on.
+  const [rowEditMode, setRowEditMode] = useState(false)
 
   const days = useMemo(() => {
     const out = []
@@ -42,22 +46,35 @@ export function WeekGrid({
   }, [habits, completions, days])
 
   return (
-    <div className={'week' + (editMode ? ' editing' : '')}>
+    <div className={'week' + (editMode ? ' editing' : '') + (rowEditMode ? ' row-editing' : '')}>
       <div className="week-hd">
         <div className="title-col">
           <h2>Week</h2>
           <div className="sub">{fmtWeekRange(weekStartISO)}</div>
-          <button
-            type="button"
-            className={'edit-stars-toggle' + (editMode ? ' active' : '')}
-            onClick={() => setEditMode(v => !v)}
-            aria-pressed={editMode}
-            title={editMode
-              ? 'Finish editing — taps will no longer remove stars'
-              : 'Turn on to add or remove stars (incl. off-schedule days)'}
-          >
-            {editMode ? '✓ Done editing' : '✎ Edit stars'}
-          </button>
+          <div className="edit-toggles">
+            <button
+              type="button"
+              className={'edit-toggle' + (editMode ? ' active' : '')}
+              onClick={() => setEditMode(v => !v)}
+              aria-pressed={editMode}
+              title={editMode
+                ? 'Finish editing — taps will no longer remove stars'
+                : 'Turn on to add or remove stars (incl. off-schedule days)'}
+            >
+              {editMode ? '✓ Done' : '✎ Edit stars'}
+            </button>
+            <button
+              type="button"
+              className={'edit-toggle' + (rowEditMode ? ' active' : '')}
+              onClick={() => setRowEditMode(v => !v)}
+              aria-pressed={rowEditMode}
+              title={rowEditMode
+                ? 'Finish editing rows — hides the edit & delete buttons'
+                : 'Turn on to edit or delete habits'}
+            >
+              {rowEditMode ? '✓ Done' : '✎ Edit rows'}
+            </button>
+          </div>
         </div>
         {days.map(d => (
           <div key={d.iso} className={'day' + (d.iso === todayISO ? ' today' : '')}>
@@ -75,6 +92,7 @@ export function WeekGrid({
           completions={completions}
           todayISO={todayISO}
           editMode={editMode}
+          rowEditMode={rowEditMode}
           onToggle={onToggle}
           onEdit={onEdit}
           onDelete={onDelete}
@@ -88,7 +106,7 @@ export function WeekGrid({
   )
 }
 
-function WeekRow({ habit, days, completions, todayISO, editMode, onToggle, onEdit, onDelete }) {
+function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete }) {
   const rowTotal = useMemo(() => {
     let earned = 0, possible = 0
     days.forEach(d => {
@@ -108,12 +126,36 @@ function WeekRow({ habit, days, completions, todayISO, editMode, onToggle, onEdi
   return (
     <div className="week-row">
       <div className="label">
-        <div className="name">{habit.name}</div>
-        <div className="freq-line">
-          <span>{freqLabel(habit.freq)}</span>
-          <span className="pts-badge">· {habit.points}pt</span>
-          {streak > 1 && <span className="streak-badge">· {streak}🔥</span>}
+        <div className="label-text">
+          <div className="name">{habit.name}</div>
+          <div className="freq-line">
+            <span>{freqLabel(habit.freq)}</span>
+            <span className="pts-badge">· {habit.points}pt</span>
+            {streak > 1 && <span className="streak-badge">· {streak}🔥</span>}
+          </div>
         </div>
+        {rowEditMode && (
+          <div className="edit-row">
+            <button
+              type="button"
+              className="row-btn edit"
+              onClick={() => onEdit(habit)}
+              aria-label={`Edit ${habit.name}`}
+              title="Edit habit"
+            >
+              <Icon.Edit />
+            </button>
+            <button
+              type="button"
+              className="row-btn delete"
+              onClick={() => onDelete(habit)}
+              aria-label={`Delete ${habit.name}`}
+              title="Delete habit"
+            >
+              <Icon.Trash />
+            </button>
+          </div>
+        )}
       </div>
       {days.map((d, idx) => {
         const due = isDueOn(habit, d.iso)
@@ -182,10 +224,6 @@ function WeekRow({ habit, days, completions, todayISO, editMode, onToggle, onEdi
       })}
       <div className="row-total">
         {rowTotal.earned}<span className="of"> /{rowTotal.possible}</span>
-      </div>
-      <div className="edit-row">
-        <button onClick={() => onEdit(habit)} title="Edit"><Icon.Edit /></button>
-        <button onClick={() => onDelete(habit)} title="Delete"><Icon.Trash /></button>
       </div>
     </div>
   )

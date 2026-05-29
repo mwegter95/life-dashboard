@@ -61,6 +61,11 @@
 .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .btn.primary:hover { background: var(--ink-2); }
 .btn.ghost { background: transparent; }
+.btn.danger { background: var(--fire); color: #fff; border-color: var(--fire); }
+.btn.danger:hover {
+  background: oklch(from var(--fire) calc(l - 0.06) c h);
+  border-color: oklch(from var(--fire) calc(l - 0.06) c h);
+}
 .btn.tiny { padding: 4px 8px; font-size: 11.5px; border-radius: 6px; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .btn.icon-only { padding: 8px; }
@@ -263,8 +268,11 @@
 .week-row:hover { background: var(--surface-2); }
 .week-row .label {
   padding: 8px 16px;
-  display: flex; flex-direction: column; gap: 1px;
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px;
   cursor: default;
+}
+.week-row .label .label-text {
+  display: flex; flex-direction: column; gap: 1px; min-width: 0;
 }
 .week-row .label .name { font-size: 13.5px; }
 .week-row .label .freq-line {
@@ -318,17 +326,19 @@
 .cell.today .cell-btn:hover { background: oklch(from var(--gold) 90% 0.08 80); }
 .cell-btn:active { transform: scale(0.92); }
 
-/* Edit-stars toggle (week header) */
-.week-hd .title-col .edit-stars-toggle {
-  margin-top: 7px; align-self: flex-start;
+/* Edit toggles (week header) — pill buttons that gate star edits and row edits */
+.week-hd .title-col .edit-toggles {
+  margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px;
+}
+.week-hd .title-col .edit-toggle {
   font: inherit; font-size: 11px; font-family: "Geist Mono", monospace;
   color: var(--muted); background: var(--surface-2);
   border: var(--rule); border-radius: 999px;
-  padding: 3px 10px; cursor: pointer;
+  padding: 3px 10px; cursor: pointer; white-space: nowrap;
   transition: background .12s, color .12s, border-color .12s;
 }
-.week-hd .title-col .edit-stars-toggle:hover { color: var(--ink-2); border-color: var(--border-strong); }
-.week-hd .title-col .edit-stars-toggle.active {
+.week-hd .title-col .edit-toggle:hover { color: var(--ink-2); border-color: var(--border-strong); }
+.week-hd .title-col .edit-toggle.active {
   background: var(--gold-deep); color: var(--bg); border-color: var(--gold-deep);
 }
 /* In edit mode every tappable cell shows a faint frame, and hovering a filled
@@ -380,18 +390,21 @@
   font-family: "Geist Mono", monospace;
 }
 
-/* edit/delete controls on hover */
-.edit-row {
-  position: absolute; right: 60px; top: 50%; transform: translateY(-50%);
-  display: none; gap: 4px;
-}
-.week-row:hover .edit-row { display: flex; }
-.edit-row button {
-  padding: 3px 7px; font-size: 11px; border-radius: 5px;
+/* Per-row edit/delete controls. Live in the label column (clear of the star
+   grid) and only appear in "Edit rows" mode so a stray click can't fire them. */
+.edit-row { display: flex; gap: 6px; flex-shrink: 0; }
+.edit-row .row-btn {
+  width: 28px; height: 28px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
   background: var(--bg); border: 0.5px solid var(--border);
   color: var(--muted);
+  transition: background .12s, color .12s, border-color .12s, transform .08s;
 }
-.edit-row button:hover { color: var(--ink); }
+.edit-row .row-btn svg { width: 15px; height: 15px; display: block; }
+.edit-row .row-btn:active { transform: scale(0.92); }
+.edit-row .row-btn.edit:hover { color: var(--ink); border-color: var(--border-strong); background: var(--surface-2); }
+.edit-row .row-btn.delete:hover { color: var(--fire); border-color: var(--fire); }
 
 /* ─────────────────────────── Stats panel ─────────────────────────── */
 .score-card { padding: 16px 18px 14px; border-bottom: var(--rule); }
@@ -538,6 +551,10 @@
   font-size: 12px; color: var(--muted);
 }
 .modal-foot .right { display: flex; gap: 8px; }
+
+/* Confirmation dialog — narrower than the habit editor, with a plain message. */
+.modal.modal--confirm { max-width: 420px; }
+.confirm-msg { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label {

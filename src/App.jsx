@@ -9,6 +9,7 @@ import { StatsPanel } from './components/StatsPanel.jsx'
 import { BadgesPanel } from './components/BadgesPanel.jsx'
 import { ReflectionCard } from './components/ReflectionCard.jsx'
 import { AddHabitModal } from './components/AddHabitModal.jsx'
+import { ConfirmModal } from './components/ConfirmModal.jsx'
 import { Toasts } from './components/Toasts.jsx'
 import { FxCanvas } from './components/FxCanvas.jsx'
 import { AuthChip, AuthModal } from './components/AuthModal.jsx'
@@ -62,6 +63,7 @@ function Dashboard({ toasts, pushToast }) {
 
   const [todayISO, setTodayISO] = useState(() => toISODate(new Date()))
   const [modal, setModal] = useState(null)        // null | { mode, habit? }
+  const [confirmDelete, setConfirmDelete] = useState(null) // null | habit
   const [authOpen, setAuthOpen] = useState(false)
   const [fx, setFx] = useState(null)
 
@@ -183,11 +185,15 @@ function Dashboard({ toasts, pushToast }) {
     pushToast('Saved')
   }, [state, pushToast])
 
-  const deleteHabit = useCallback((h) => {
-    if (!confirm(`Delete "${h.name}"? This removes its history.`)) return
-    state.deleteHabit(h.id)
-    setModal(null)
-  }, [state])
+  // Ask first — a styled confirmation modal replaces the native confirm().
+  const requestDelete = useCallback((h) => setConfirmDelete(h), [])
+  const confirmDeleteHabit = useCallback(() => {
+    if (!confirmDelete) return
+    state.deleteHabit(confirmDelete.id)
+    setConfirmDelete(null)
+    setModal(null)       // also close the edit modal if delete came from there
+    pushToast('Deleted')
+  }, [state, confirmDelete, pushToast])
 
   /* Keyboard: 'n' to add, Esc to close modal. */
   useEffect(() => {
@@ -199,13 +205,14 @@ function Dashboard({ toasts, pushToast }) {
         setModal({ mode: 'add' })
       }
       if (e.key === 'Escape') {
-        if (modal) setModal(null)
+        if (confirmDelete) setConfirmDelete(null)
+        else if (modal) setModal(null)
         else if (authOpen) setAuthOpen(false)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [modal, authOpen])
+  }, [modal, authOpen, confirmDelete])
 
   if (loading && habits.length === 0) {
     return (
@@ -255,7 +262,7 @@ function Dashboard({ toasts, pushToast }) {
             todayISO={todayISO}
             onToggle={toggleHabit}
             onEdit={(h) => setModal({ mode: 'edit', habit: h })}
-            onDelete={deleteHabit}
+            onDelete={requestDelete}
           />
           <div style={{
             padding: '14px 4px 0',
@@ -267,7 +274,7 @@ function Dashboard({ toasts, pushToast }) {
             <div className="help-row">
               <span><span className="kbd">Tap</span> to check off</span>
               <span><span className="kbd">+</span> add habit</span>
-              <span><span className="kbd">Hover</span> row to edit</span>
+              <span><span className="kbd">Edit rows</span> to change or remove</span>
             </div>
             <span style={{ fontFamily: 'Geist Mono, monospace' }}>
               press <span className="kbd">N</span> to add
@@ -311,7 +318,16 @@ function Dashboard({ toasts, pushToast }) {
           initial={modal.habit}
           onSave={saveHabit}
           onClose={() => setModal(null)}
-          onDelete={deleteHabit}
+          onDelete={requestDelete}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmModal
+          title="Are you sure you want to delete?"
+          message={`"${confirmDelete.name}" and its history will be permanently removed. This can't be undone.`}
+          confirmLabel="Delete habit"
+          onConfirm={confirmDeleteHabit}
+          onClose={() => setConfirmDelete(null)}
         />
       )}
       {authOpen && (
