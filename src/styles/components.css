@@ -87,6 +87,68 @@
   .main { grid-template-columns: 1fr; }
 }
 
+/* ─────────────────────────── mantra ─────────────────────────── */
+/* Slim full-width banner pinned to the top of the content, above the day's
+   tasks. Click the text to edit inline. */
+.mantra {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: var(--rule);
+  border-radius: var(--radius);
+}
+.mantra-label {
+  flex-shrink: 0;
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mantra-display {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 0; padding: 0;
+  cursor: text; text-align: left;
+}
+.mantra-text {
+  font-family: "Instrument Serif", "Georgia", serif;
+  font-style: italic;
+  font-size: 20px; line-height: 1.25;
+  color: var(--ink);
+}
+.mantra-placeholder {
+  font-family: "Instrument Serif", "Georgia", serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--muted);
+}
+.mantra-edit {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .12s;
+}
+.mantra-display:hover .mantra-edit,
+.mantra.empty .mantra-edit { opacity: 1; }
+.mantra-input {
+  flex: 1; min-width: 0;
+  font-family: "Instrument Serif", "Georgia", serif;
+  font-style: italic;
+  font-size: 20px;
+  color: var(--ink);
+  background: var(--bg);
+  border: var(--rule);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  outline: none;
+}
+.mantra-input:focus { border-color: var(--gold-deep); }
+
 .panel {
   background: var(--surface);
   border: var(--rule);
@@ -230,11 +292,14 @@
 .week-hd {
   display: grid;
   grid-template-columns: 1fr repeat(7, var(--cell-w)) 56px;
-  padding: 14px 0 10px 16px;
+  padding: 14px 0 10px 0;
   border-bottom: var(--rule);
   align-items: center;
 }
-.week-hd .title-col { display: flex; flex-direction: column; }
+/* Left inset lives on the title cell (not the grid container) so the 7 day
+   columns + total share the exact same track geometry as the rows below them
+   — otherwise container padding shifts the headers off the star cells. */
+.week-hd .title-col { display: flex; flex-direction: column; padding-left: 16px; }
 .week-hd .title-col h2 {
   margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--ink-2);
@@ -692,23 +757,32 @@
 
 /* ─────────────────────────── mobile tweaks ─────────────────────────── */
 @media (max-width: 720px) {
-  .topbar { grid-template-columns: 1fr auto; gap: 12px; padding: 14px 16px; }
+  .topbar { grid-template-columns: 1fr auto; gap: 10px; padding: 14px 14px; }
   /* Keep the wordmark compact on mobile — desktop uses the larger 64px size */
   .topbar .brand .life-dashboard-logo { height: 44px; }
   .topbar .center { display: none; }
+  /* The date already shows in the Today panel; drop it here so the right
+     cluster has room and nothing overflows the viewport. */
+  .topbar .date { display: none; }
   .topbar .right { gap: 6px; }
+  /* Add-habit collapses to an icon-only button on mobile. */
+  .topbar .right .add-habit-btn { padding: 8px; }
+  .topbar .right .add-habit-btn .btn-label { display: none; }
+  /* Cap a long display name so the auth chip can't push the row wide. */
+  .auth-chip { padding: 6px 10px; gap: 6px; }
+  .auth-chip .who { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .stat-pill { padding: 6px 9px; }
   .stat-pill .label { display: none; }
   .main { padding: 16px 12px; gap: 16px; }
   :root { --cell-w: 32px; }
   /* Tighter than the desktop grid so the whole week fits in an iPhone-Pro
      viewport (≈393px) without horizontal scroll.
-     80 + 7×32 + 44 = 348px content  +  24px padding  =  372px total. */
+     80 + 7×32 + 44 = 348px content  +  24px main padding  =  372px total. */
   .week-hd, .week-row {
     grid-template-columns: 80px repeat(7, var(--cell-w)) 44px;
   }
-  .week-hd { padding-left: 12px; }
-  .week-hd .total-col { padding-right: 12px; }
+  /* Match header + row right insets so the Total column lines up too. */
+  .week-hd .total-col, .row-total { padding-right: 12px; }
   .week-hd .day { font-size: 9px; }
   .week-row .label .name { font-size: 12.5px; }
   .reminders { grid-template-columns: 1fr 1fr; gap: 8px; }

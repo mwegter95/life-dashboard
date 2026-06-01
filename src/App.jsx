@@ -10,6 +10,7 @@ import { BadgesPanel } from './components/BadgesPanel.jsx'
 import { ReflectionCard } from './components/ReflectionCard.jsx'
 import { AddHabitModal } from './components/AddHabitModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
+import { MantraCard } from './components/MantraCard.jsx'
 import { Toasts } from './components/Toasts.jsx'
 import { FxCanvas } from './components/FxCanvas.jsx'
 import { AuthChip, AuthModal } from './components/AuthModal.jsx'
@@ -59,7 +60,7 @@ function AppShell() {
 
 function Dashboard({ toasts, pushToast }) {
   const state = useAppState()
-  const { habits, completions, reflections, loading, error } = state
+  const { habits, completions, reflections, mantra, loading, error } = state
 
   const [todayISO, setTodayISO] = useState(() => toISODate(new Date()))
   const [modal, setModal] = useState(null)        // null | { mode, habit? }
@@ -237,6 +238,7 @@ function Dashboard({ toasts, pushToast }) {
       />
 
       <main className="main">
+        <MantraCard mantra={mantra} onSave={state.setMantra} />
         <TodayPanel
           habits={habits}
           completions={completions}

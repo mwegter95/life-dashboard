@@ -121,3 +121,10 @@ export function putReflection(date, text) {
     body: JSON.stringify({ text }),
   })
 }
+
+export function putMantra(text) {
+  return request('/api/life/mantra', {
+    method: 'PUT',
+    body: JSON.stringify({ mantra: text }),
+  })
+}

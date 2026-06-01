@@ -57,8 +57,8 @@ export function Topbar({
           {theme === 'dark' ? <Icon.Sun /> : <Icon.Moon />}
         </button>
         {authSlot}
-        <button className="btn primary" onClick={onAdd}>
-          <Icon.Plus /> Add habit
+        <button className="btn primary add-habit-btn" onClick={onAdd} aria-label="Add habit">
+          <Icon.Plus /> <span className="btn-label">Add habit</span>
         </button>
       </div>
     </header>

@@ -17,6 +17,7 @@ const initial = {
   habits: [],
   completions: {},        // { [habitId]: [{date, scored, bonus}] }
   reflections: {},        // { [iso]: text }
+  mantra: '',             // single per-user phrase shown atop the dashboard
 }
 
 function reducer(state, action) {
@@ -31,6 +32,7 @@ function reducer(state, action) {
         habits: action.habits || [],
         completions: action.completions || {},
         reflections: action.reflections || {},
+        mantra: action.mantra || '',
       }
     case 'LOAD_ERR':
       return { ...state, loading: false, error: action.error }
@@ -82,6 +84,9 @@ function reducer(state, action) {
         reflections: { ...state.reflections, [action.date]: action.text },
       }
     }
+
+    case 'SET_MANTRA':
+      return { ...state, mantra: action.text }
 
     default:
       return state
@@ -179,6 +184,17 @@ export function AppStateProvider({ children, onError }) {
     }
   }, [state.reflections])
 
+  const setMantra = useCallback(async (text) => {
+    const prev = state.mantra
+    dispatch({ type: 'SET_MANTRA', text })
+    try {
+      await api.putMantra(text)
+    } catch (err) {
+      dispatch({ type: 'SET_MANTRA', text: prev })
+      errRef.current?.(`Couldn't save mantra: ${err.message}`)
+    }
+  }, [state.mantra])
+
   const value = useMemo(() => ({
     ...state,
     upsertHabit,
@@ -186,7 +202,8 @@ export function AppStateProvider({ children, onError }) {
     addCompletion,
     removeCompletion,
     setReflection,
-  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection])
+    setMantra,
+  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra])
 
   return <StateCtx.Provider value={value}>{children}</StateCtx.Provider>
 }
