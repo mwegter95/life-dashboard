@@ -206,6 +206,18 @@ export function AppStateProvider({ children, onError }) {
     }
   }, [])
 
+  const toggleSmartHidden = useCallback(async (habit) => {
+    const newHidden = !habit.hidden
+    const updated = { ...habit, hidden: newHidden }
+    dispatch({ type: 'UPSERT_HABIT', habit: updated })
+    try {
+      await api.patchSmartHidden(habit.id, newHidden)
+    } catch (err) {
+      dispatch({ type: 'UPSERT_HABIT', habit })
+      errRef.current?.(`Couldn't save: ${err.message}`)
+    }
+  }, [])
+
   const value = useMemo(() => ({
     ...state,
     upsertHabit,
@@ -215,7 +227,8 @@ export function AppStateProvider({ children, onError }) {
     setReflection,
     setMantra,
     refresh,
-  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh])
+    toggleSmartHidden,
+  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh, toggleSmartHidden])
 
   return <StateCtx.Provider value={value}>{children}</StateCtx.Provider>
 }

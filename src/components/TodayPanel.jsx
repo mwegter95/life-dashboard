@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Checkbox } from './Checkbox.jsx'
+import * as Icon from './Icons.jsx'
+import { useAppState } from '../state/AppState.jsx'
 import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
 } from '../lib/frequency.js'
@@ -8,6 +10,7 @@ export function TodayPanel({
   habits, completions, todayISO, dateStr, onToggle, starStyle,
   scoreToday, possibleToday,
 }) {
+  const { toggleSmartHidden } = useAppState()
   const [showOffSchedule, setShowOffSchedule] = useState(false)
 
   const dueToday = habits.filter(h =>
@@ -153,6 +156,7 @@ export function TodayPanel({
                 completions={completions}
                 onToggle={onToggle}
                 starStyle={starStyle}
+                onToggleHidden={toggleSmartHidden}
               />
             ))}
             {smartDone.map(h => (
@@ -163,6 +167,7 @@ export function TodayPanel({
                 completions={completions}
                 onToggle={onToggle}
                 starStyle={starStyle}
+                onToggleHidden={toggleSmartHidden}
               />
             ))}
           </>
@@ -172,14 +177,16 @@ export function TodayPanel({
   )
 }
 
-function TaskRow({ habit, dateISO, completions, onToggle, starStyle }) {
+function TaskRow({ habit, dateISO, completions, onToggle, starStyle, onToggleHidden }) {
   const c = getCompletion(habit, dateISO, completions)
   const done = !!c
   const bonus = c && typeof c === 'object' && c.bonus
   const streak = computeStreak(habit, completions, dateISO)
   const overdue = habit.freq?.kind === 'date' && habit.freq.date < dateISO && !done
+  const isSmartTask = habit.source === 'gcal-ai'
+  const hidden = !!habit.hidden
   return (
-    <div className={'task' + (done ? ' done' : '') + (overdue ? ' overdue' : '')}>
+    <div className={'task' + (done ? ' done' : '') + (overdue ? ' overdue' : '') + (hidden ? ' smart-hidden' : '')}>
       <Checkbox
         done={done}
         variant={starStyle}
@@ -195,6 +202,16 @@ function TaskRow({ habit, dateISO, completions, onToggle, starStyle }) {
         </div>
       </div>
       <div className="right-col">
+        {isSmartTask && onToggleHidden && (
+          <button
+            type="button"
+            className="eye-btn"
+            onClick={() => onToggleHidden(habit)}
+            aria-label={hidden ? 'Show reminder' : 'Hide reminder'}
+          >
+            {hidden ? <Icon.EyeSlash /> : <Icon.Eye />}
+          </button>
+        )}
         {done && (
           <span className="serif" style={{ fontSize: 14, color: 'var(--good)' }}>
             +{c?.scored || habit.points}

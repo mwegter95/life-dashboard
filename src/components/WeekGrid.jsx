@@ -5,10 +5,12 @@ import {
 import { addDays, fromISODate, toISODate, fmtWeekRange, DOW_INITIAL } from '../lib/dates.js'
 import { ChainLink } from './ChainLink.jsx'
 import { Icon } from './Icons.jsx'
+import { useAppState } from '../state/AppState.jsx'
 
 export function WeekGrid({
   habits, completions, weekStartISO, todayISO, onToggle, onEdit, onDelete,
 }) {
+  const { toggleSmartHidden } = useAppState()
   // Edit mode gates star removal. In normal mode a stray tap can only *add* a
   // star (a safe, reversible action); removing one — or adding an off-day star
   // on a non-scheduled day — requires turning on Edit, so nothing gets deleted
@@ -118,6 +120,7 @@ export function WeekGrid({
           onToggle={onToggle}
           onEdit={onEdit}
           onDelete={onDelete}
+          onToggleHidden={toggleSmartHidden}
         />
       ))}
       <div className="week-foot">
@@ -128,7 +131,7 @@ export function WeekGrid({
   )
 }
 
-function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete }) {
+function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden }) {
   const rowTotal = useMemo(() => {
     let earned = 0, possible = 0
     days.forEach(d => {
@@ -146,7 +149,7 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
   const streak = computeStreak(habit, completions, todayISO)
 
   return (
-    <div className="week-row">
+    <div className={'week-row' + (habit.hidden ? ' smart-hidden' : '')}>
       <div className="label">
         <div className="label-text">
           <div className="name">{habit.name}</div>
@@ -156,6 +159,16 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
             {streak > 1 && <span className="streak-badge">· {streak}🔥</span>}
           </div>
         </div>
+        {onToggleHidden && (
+          <button
+            type="button"
+            className="eye-btn"
+            onClick={() => onToggleHidden(habit)}
+            aria-label={habit.hidden ? 'Show reminder' : 'Hide reminder'}
+          >
+            {habit.hidden ? <Icon.EyeSlash /> : <Icon.Eye />}
+          </button>
+        )}
         {rowEditMode && (
           <div className="edit-row">
             <button

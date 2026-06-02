@@ -315,6 +315,17 @@
   margin-top: 4px;
 }
 
+/* ── Eye / hide button for smart reminders ── */
+.eye-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); width: 20px; height: 20px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.45; flex-shrink: 0;
+}
+.eye-btn:hover { opacity: 1; }
+.task.smart-hidden .name { text-decoration: line-through; color: var(--faint); }
+.week-row.smart-hidden .label-text .name { text-decoration: line-through; color: var(--faint); }
+
 /* ─────────────────────────── Week grid ─────────────────────────── */
 .week {
   background: var(--surface);

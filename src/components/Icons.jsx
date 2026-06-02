@@ -44,4 +44,15 @@ export const Icon = {
       <path d="M13.3 9.9a5.6 5.6 0 0 1-7.2-7.2 5.7 5.7 0 1 0 7.2 7.2z" />
     </svg>
   ),
+  Eye: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" />
+      <circle cx="8" cy="8" r="2" />
+    </svg>
+  ),
+  EyeSlash: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 2l12 12M6.7 6.8A2 2 0 0 0 9.2 9.3M4.2 4.3C2.6 5.3 1 8 1 8s2.5 5 7 5c1.4 0 2.7-.4 3.8-1.1M8.8 3.1C8.5 3 8.3 3 8 3c-4.5 0-7 5-7 5s.7 1.3 2 2.5M12.5 6c.9.9 1.8 2 2.5 2 0 0-2.5 5-7 5" />
+    </svg>
+  ),
 }

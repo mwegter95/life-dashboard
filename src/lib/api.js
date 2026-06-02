@@ -146,3 +146,10 @@ export function gcalEvents(days = 90) {
 export function generateSmartTasks() {
   return request('/api/life/smart-tasks/generate', { method: 'POST' })
 }
+
+export function patchSmartHidden(habitId, hidden) {
+  return request(`/api/life/smart-tasks/${encodeURIComponent(habitId)}/hidden`, {
+    method: 'PATCH',
+    body: JSON.stringify({ hidden }),
+  })
+}
