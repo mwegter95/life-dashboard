@@ -132,10 +132,10 @@ export function CalendarPanel({ pushToast, onGenerated }) {
         <span className="sub">{status.email || 'connected'}</span>
       </div>
       <div className="cal-actions">
-        <button className="btn tiny" onClick={regenerate} disabled={generating}>
+        <button className="btn tiny primary" onClick={regenerate} disabled={generating}>
           {generating ? 'Thinking…' : '✨ Refresh smart reminders'}
         </button>
-        <button className="btn tiny ghost" onClick={disconnect}>Disconnect</button>
+        <button className="btn tiny ghost cal-disconnect" onClick={disconnect}>Disconnect</button>
       </div>
       <div className="cal-list">
         {eventsLoading && <div className="cal-empty">Loading events…</div>}

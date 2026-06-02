@@ -17,13 +17,23 @@ export function TodayPanel({
   const remaining = dueToday.filter(h => !isDoneFor(h, todayISO, completions))
   const done = dueToday.filter(h => isDoneFor(h, todayISO, completions))
 
+  // Split by source: regular user habits vs. AI-generated calendar reminders.
+  const regularDue       = dueToday.filter(h => h.source !== 'gcal-ai')
+  const smartDue         = dueToday.filter(h => h.source === 'gcal-ai')
+  const regularRemaining = regularDue.filter(h => !isDoneFor(h, todayISO, completions))
+  const regularDone      = regularDue.filter(h => isDoneFor(h, todayISO, completions))
+  const smartRemaining   = smartDue.filter(h => !isDoneFor(h, todayISO, completions))
+  const smartDone        = smartDue.filter(h => isDoneFor(h, todayISO, completions))
+
   // Off-schedule habits — recurring habits that aren't due today but can still
   // be logged "I did it anyway" (e.g. watered the plants on a non-Sunday for a
   // Sunday habit). Completing one records it on today's date, awards points,
   // and — thanks to window-based streaks — counts toward the period's streak.
+  // Smart tasks are excluded — they're date-specific, not recurring habits.
   const dueIds = new Set(dueToday.map(h => h.id))
   const offSchedule = habits
     .filter(h => {
+      if (h.source === 'gcal-ai') return false
       if (dueIds.has(h.id)) return false
       const k = h.freq?.kind
       if (k === 'daily' || k === 'weekdays' || k === 'every_n') return true
@@ -35,13 +45,13 @@ export function TodayPanel({
 
   const groups = useMemo(() => {
     const m = new Map()
-    remaining.forEach(h => {
+    regularRemaining.forEach(h => {
       const k = h.category || 'General'
       if (!m.has(k)) m.set(k, [])
       m.get(k).push(h)
     })
     return [...m.entries()]
-  }, [remaining])
+  }, [regularRemaining])
 
   const pct = possibleToday > 0
     ? Math.min(100, Math.round((scoreToday / possibleToday) * 100))
@@ -84,10 +94,10 @@ export function TodayPanel({
             ))}
           </div>
         ))}
-        {done.length > 0 && (
+        {regularDone.length > 0 && (
           <div>
-            <div className="context-group">Done · {done.length}</div>
-            {done.map(h => (
+            <div className="context-group">Done · {regularDone.length}</div>
+            {regularDone.map(h => (
               <TaskRow
                 key={h.id}
                 habit={h}
@@ -130,6 +140,32 @@ export function TodayPanel({
               </div>
             )}
           </div>
+        )}
+
+        {smartDue.length > 0 && (
+          <>
+            <div className="smart-divider">Calendar</div>
+            {smartRemaining.map(h => (
+              <TaskRow
+                key={h.id}
+                habit={h}
+                dateISO={todayISO}
+                completions={completions}
+                onToggle={onToggle}
+                starStyle={starStyle}
+              />
+            ))}
+            {smartDone.map(h => (
+              <TaskRow
+                key={h.id}
+                habit={h}
+                dateISO={todayISO}
+                completions={completions}
+                onToggle={onToggle}
+                starStyle={starStyle}
+              />
+            ))}
+          </>
         )}
       </div>
     </div>

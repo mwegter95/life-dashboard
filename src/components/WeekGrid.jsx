@@ -19,6 +19,9 @@ export function WeekGrid({
   // buttons only appear (in the label, clear of the star grid) when it's on.
   const [rowEditMode, setRowEditMode] = useState(false)
 
+  const regularHabits = habits.filter(h => h.source !== 'gcal-ai')
+  const smartHabits   = habits.filter(h => h.source === 'gcal-ai')
+
   const days = useMemo(() => {
     const out = []
     const start = fromISODate(weekStartISO)
@@ -84,7 +87,7 @@ export function WeekGrid({
         ))}
         <div className="total-col">Total</div>
       </div>
-      {habits.map(h => (
+      {regularHabits.map(h => (
         <WeekRow
           key={h.id}
           habit={h}
@@ -93,6 +96,25 @@ export function WeekGrid({
           todayISO={todayISO}
           editMode={editMode}
           rowEditMode={rowEditMode}
+          onToggle={onToggle}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+      {smartHabits.length > 0 && (
+        <div className="week-section-divider">
+          <span>Calendar reminders</span>
+        </div>
+      )}
+      {smartHabits.map(h => (
+        <WeekRow
+          key={h.id}
+          habit={h}
+          days={days}
+          completions={completions}
+          todayISO={todayISO}
+          editMode={editMode}
+          rowEditMode={false}
           onToggle={onToggle}
           onEdit={onEdit}
           onDelete={onDelete}
