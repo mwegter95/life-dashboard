@@ -8,6 +8,22 @@ export function AuthProvider({ children }) {
   const [bootstrapping, setBootstrapping] = useState(true)
 
   useEffect(() => {
+    // Development-only shortcut: if LIFE_DEV_USER is set in localStorage,
+    // treat the app as already logged-in with that user object. This lets
+    // us reproduce post-login UI without calling the real backend.
+    if (import.meta.env.DEV) {
+      try {
+        const dev = localStorage.getItem('LIFE_DEV_USER')
+        if (dev) {
+          setUser(JSON.parse(dev))
+          setBootstrapping(false)
+          return
+        }
+      } catch (e) {
+        // fall through to normal authMe
+      }
+    }
+
     let cancelled = false
     api.authMe().then(u => {
       if (!cancelled) {

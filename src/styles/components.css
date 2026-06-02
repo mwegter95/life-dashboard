@@ -397,6 +397,13 @@
   border-left: 0.5px solid var(--border);
   position: relative;
 }
+.@media (max-width: 720px) {
+.  /* On narrow screens, top-align task rows so wrapped names don't vertically
+.     misplace the small action buttons (eyeball). Keep desktop centered. */
+.  .task { align-items: flex-start; grid-template-columns: 28px 1fr auto; }
+.  .task .right-col { align-items: flex-start; }
+.  .eye-btn { margin-top: 4px; }
+.}
 .cell.today { background: oklch(from var(--gold) 92% 0.04 80 / 0.4); }
 .cell.not-due {
   background-image: repeating-linear-gradient(135deg,
