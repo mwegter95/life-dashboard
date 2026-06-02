@@ -11,6 +11,7 @@ import { ReflectionCard } from './components/ReflectionCard.jsx'
 import { AddHabitModal } from './components/AddHabitModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
 import { MantraCard } from './components/MantraCard.jsx'
+import { CalendarPanel } from './components/CalendarPanel.jsx'
 import { Toasts } from './components/Toasts.jsx'
 import { FxCanvas } from './components/FxCanvas.jsx'
 import { AuthChip, AuthModal } from './components/AuthModal.jsx'
@@ -73,6 +74,23 @@ function Dashboard({ toasts, pushToast }) {
     const tick = () => setTodayISO(toISODate(new Date()))
     const id = setInterval(tick, 60_000)
     return () => clearInterval(id)
+  }, [])
+
+  /* Handle the Google Calendar OAuth return (?gcal=connected|error). */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const gcal = params.get('gcal')
+    if (!gcal) return
+    if (gcal === 'connected') {
+      pushToast('Google Calendar connected — generating smart reminders…')
+      // The first generation runs server-side; pull it in shortly.
+      setTimeout(() => state.refresh(), 6000)
+    } else if (gcal === 'error') {
+      pushToast("Couldn't connect Google Calendar — please try again")
+    }
+    params.delete('gcal')
+    const qs = params.toString()
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash)
   }, [])
 
   /* Derived stats */
@@ -290,6 +308,7 @@ function Dashboard({ toasts, pushToast }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <CalendarPanel pushToast={pushToast} onGenerated={state.refresh} />
           <StatsPanel
             scoreToday={scoreToday}
             scoreYesterday={scoreYesterday}

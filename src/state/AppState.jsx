@@ -195,6 +195,17 @@ export function AppStateProvider({ children, onError }) {
     }
   }, [state.mantra])
 
+  // Re-pull everything from the backend (used after AI smart-task generation,
+  // which adds dated reminders server-side).
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api.fetchState()
+      dispatch({ type: 'LOAD_OK', ...data })
+    } catch (err) {
+      errRef.current?.(`Couldn't refresh: ${err.message}`)
+    }
+  }, [])
+
   const value = useMemo(() => ({
     ...state,
     upsertHabit,
@@ -203,7 +214,8 @@ export function AppStateProvider({ children, onError }) {
     removeCompletion,
     setReflection,
     setMantra,
-  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra])
+    refresh,
+  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh])
 
   return <StateCtx.Provider value={value}>{children}</StateCtx.Provider>
 }

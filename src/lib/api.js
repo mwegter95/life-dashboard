@@ -128,3 +128,21 @@ export function putMantra(text) {
     body: JSON.stringify({ mantra: text }),
   })
 }
+
+/* ── Google Calendar + AI smart reminders ─────────────────────────────── */
+export function gcalStatus() {
+  return request('/api/life/gcal/status')
+}
+export async function gcalConnectUrl() {
+  const { auth_url } = await request('/api/life/gcal/connect')
+  return auth_url
+}
+export function gcalDisconnect() {
+  return request('/api/life/gcal/disconnect', { method: 'POST' })
+}
+export function gcalEvents(days = 90) {
+  return request(`/api/life/gcal/events?days=${days}`)
+}
+export function generateSmartTasks() {
+  return request('/api/life/smart-tasks/generate', { method: 'POST' })
+}
