@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Checkbox } from './Checkbox.jsx'
-import * as Icon from './Icons.jsx'
+import { Icon } from './Icons.jsx'
 import { useAppState } from '../state/AppState.jsx'
 import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
