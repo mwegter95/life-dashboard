@@ -39,6 +39,14 @@ if (typeof window !== 'undefined' && window.parent !== window) {
   const ro = new ResizeObserver(postHeight)
   window.addEventListener('load', postHeight)
   window.addEventListener('resize', postHeight)
+  window.addEventListener('message', (e) => {
+    const d = e.data
+    if (!d || typeof d !== 'object' || d.type !== 'appframe:viewport') return
+    const top = Number.isFinite(d.top) ? Math.max(0, d.top) : 0
+    const height = Number.isFinite(d.height) && d.height > 0 ? d.height : window.innerHeight
+    document.documentElement.style.setProperty('--embed-viewport-top', `${Math.round(top)}px`)
+    document.documentElement.style.setProperty('--embed-viewport-height', `${Math.round(height)}px`)
+  })
   // Wait for the body to exist (StrictMode mounts after this script tag runs).
   queueMicrotask(() => {
     if (document.body) ro.observe(document.body)

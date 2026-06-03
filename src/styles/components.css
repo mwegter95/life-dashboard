@@ -737,12 +737,20 @@
 }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .modal {
-  width: 100%; max-width: 560px; max-height: calc(100vh - 48px);
+  width: 100%; max-width: 560px; max-height: calc(100dvh - 48px);
   overflow-y: auto;
   background: var(--bg); border-radius: 14px;
   border: var(--rule);
   box-shadow: var(--shadow);
   animation: modal-up .25s cubic-bezier(.2,.7,.2,1);
+}
+.embedded .modal-bg {
+  position: absolute;
+  inset: var(--embed-viewport-top, 0px) 0 auto;
+  min-height: var(--embed-viewport-height, 100dvh);
+}
+.embedded .modal {
+  max-height: calc(var(--embed-viewport-height, 100dvh) - 48px);
 }
 @keyframes modal-up { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal-hd {

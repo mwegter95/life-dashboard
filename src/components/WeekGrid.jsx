@@ -4,7 +4,6 @@ import {
 } from '../lib/frequency.js'
 import { addDays, fromISODate, toISODate, fmtWeekRange, DOW_INITIAL } from '../lib/dates.js'
 import { Icon } from './Icons.jsx'
-import { ConfirmModal } from './ConfirmModal.jsx'
 import { useAppState } from '../state/AppState.jsx'
 
 export function WeekGrid({
@@ -12,7 +11,6 @@ export function WeekGrid({
   onPrevWeek, onNextWeek,
 }) {
   const { toggleSmartHidden, setSmartDeleted } = useAppState()
-  const [confirmDeleteSmart, setConfirmDeleteSmart] = useState(null) // habit pending delete
   const [showDeleted, setShowDeleted] = useState(false)              // deleted-list modal
   // Edit mode gates star removal. In normal mode a stray tap can only *add* a
   // star (a safe, reversible action); removing one — or adding an off-day star
@@ -137,7 +135,7 @@ export function WeekGrid({
           onEdit={onEdit}
           onDelete={onDelete}
           onToggleHidden={toggleSmartHidden}
-          onDeleteSmart={setConfirmDeleteSmart}
+          onDeleteSmart={(h) => setSmartDeleted(h, true)}
         />
       ))}
       {(hiddenSmart.length > 0 || deletedSmart.length > 0) && (
@@ -177,7 +175,7 @@ export function WeekGrid({
           onEdit={onEdit}
           onDelete={onDelete}
           onToggleHidden={toggleSmartHidden}
-          onDeleteSmart={setConfirmDeleteSmart}
+          onDeleteSmart={(h) => setSmartDeleted(h, true)}
         />
       ))}
       <div className="week-foot">
@@ -186,15 +184,6 @@ export function WeekGrid({
       </div>
       </div>
 
-      {confirmDeleteSmart && (
-        <ConfirmModal
-          title="Are you sure you want to delete?"
-          message={`"${confirmDeleteSmart.name}" will be removed. You can restore it later from the Deleted list, and future syncs won't bring it back.`}
-          confirmLabel="Delete reminder"
-          onConfirm={() => { setSmartDeleted(confirmDeleteSmart, true); setConfirmDeleteSmart(null) }}
-          onClose={() => setConfirmDeleteSmart(null)}
-        />
-      )}
       {showDeleted && (
         <DeletedModal
           deleted={deletedSmart}
