@@ -11,7 +11,7 @@ export function WeekGrid({
   onPrevWeek, onNextWeek,
 }) {
   const { toggleSmartHidden, setSmartDeleted } = useAppState()
-  const [showDeleted, setShowDeleted] = useState(false)              // deleted-list modal
+  const [deletedAnchor, setDeletedAnchor] = useState(null)           // deleted-list popover anchor
   // Edit mode gates star removal. In normal mode a stray tap can only *add* a
   // star (a safe, reversible action); removing one — or adding an off-day star
   // on a non-scheduled day — requires turning on Edit, so nothing gets deleted
@@ -29,6 +29,28 @@ export function WeekGrid({
   const visibleSmart  = smartHabits.filter(h => !h.hidden)
   const hiddenSmart   = smartHabits.filter(h => h.hidden)
   const deletedSmart  = habits.filter(h => h.source === 'gcal-ai' && h.deleted)
+
+  const openDeleted = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const root = document.documentElement
+    const embedded = root.classList.contains('embedded')
+    const styles = getComputedStyle(root)
+    const visibleTop = embedded
+      ? parseFloat(styles.getPropertyValue('--embed-viewport-top')) || 0
+      : 0
+    const visibleHeight = embedded
+      ? parseFloat(styles.getPropertyValue('--embed-viewport-height')) || window.innerHeight
+      : window.innerHeight
+    const scrollY = embedded ? window.scrollY : 0
+    const popoverW = Math.min(360, window.innerWidth - 24)
+    const popoverH = 360
+    const minTop = visibleTop + 12
+    const maxTop = Math.max(minTop, visibleTop + visibleHeight - popoverH - 12)
+    setDeletedAnchor({
+      top: Math.max(minTop, Math.min(rect.bottom + scrollY + 8, maxTop)),
+      left: Math.max(12, Math.min(rect.left, window.innerWidth - popoverW - 12)),
+    })
+  }
 
   const days = useMemo(() => {
     const out = []
@@ -155,7 +177,7 @@ export function WeekGrid({
             <button
               type="button"
               className="week-pill"
-              onClick={() => setShowDeleted(true)}
+              onClick={openDeleted}
             >
               <Icon.Trash /> Deleted <span className="count">{deletedSmart.length}</span>
             </button>
@@ -184,21 +206,22 @@ export function WeekGrid({
       </div>
       </div>
 
-      {showDeleted && (
+      {deletedAnchor && (
         <DeletedModal
           deleted={deletedSmart}
+          anchor={deletedAnchor}
           onRestore={(h) => setSmartDeleted(h, false)}
-          onClose={() => setShowDeleted(false)}
+          onClose={() => setDeletedAnchor(null)}
         />
       )}
     </>
   )
 }
 
-function DeletedModal({ deleted, onRestore, onClose }) {
+function DeletedModal({ deleted, anchor, onRestore, onClose }) {
   return (
-    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true">
+    <div className="modal-bg modal-bg--popover" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal--deleted" role="dialog" aria-modal="true" style={anchor}>
         <div className="modal-hd">
           <h3>Deleted reminders</h3>
           <button className="x" onClick={onClose} aria-label="Close"><Icon.X /></button>

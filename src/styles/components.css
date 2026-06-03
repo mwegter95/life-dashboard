@@ -597,6 +597,16 @@
 .deleted-meta {
   display: block; font-size: 10.5px; font-family: "Geist Mono", monospace; color: var(--muted);
 }
+.modal-bg.modal-bg--popover {
+  align-items: flex-start; justify-content: flex-start;
+  padding: 0;
+}
+.modal.modal--deleted {
+  position: absolute;
+  width: min(360px, calc(100vw - 24px));
+  max-width: 360px;
+  max-height: min(420px, calc(100dvh - 24px));
+}
 
 /* Per-row edit/delete controls. Live in the label column (clear of the star
    grid) and only appear in "Edit rows" mode so a stray click can't fire them. */
@@ -751,6 +761,13 @@
 }
 .embedded .modal {
   max-height: calc(var(--embed-viewport-height, 100dvh) - 48px);
+}
+.embedded .modal-bg.modal-bg--popover {
+  inset: 0;
+  min-height: 100%;
+}
+.embedded .modal.modal--deleted {
+  max-height: min(420px, calc(var(--embed-viewport-height, 100dvh) - 24px));
 }
 @keyframes modal-up { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal-hd {

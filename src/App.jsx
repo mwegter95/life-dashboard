@@ -208,8 +208,17 @@ function Dashboard({ toasts, pushToast }) {
     pushToast('Saved')
   }, [state, pushToast])
 
-  // Ask first — a styled confirmation modal replaces the native confirm().
-  const requestDelete = useCallback((h) => setConfirmDelete(h), [])
+  // Regular habits are destructive deletes; calendar reminders are soft-deleted
+  // and can be restored from the Deleted list.
+  const requestDelete = useCallback((h) => {
+    if (h?.source === 'gcal-ai') {
+      state.setSmartDeleted(h, true)
+      setModal(null)
+      pushToast('Deleted reminder')
+      return
+    }
+    setConfirmDelete(h)
+  }, [state, pushToast])
   const confirmDeleteHabit = useCallback(() => {
     if (!confirmDelete) return
     state.deleteHabit(confirmDelete.id)
