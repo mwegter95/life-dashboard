@@ -153,3 +153,10 @@ export function patchSmartHidden(habitId, hidden) {
     body: JSON.stringify({ hidden }),
   })
 }
+
+export function patchSmartDeleted(habitId, deleted) {
+  return request(`/api/life/smart-tasks/${encodeURIComponent(habitId)}/deleted`, {
+    method: 'PATCH',
+    body: JSON.stringify({ deleted }),
+  })
+}

@@ -218,6 +218,18 @@ export function AppStateProvider({ children, onError }) {
     }
   }, [])
 
+  // Soft-delete / restore a smart reminder (persists across regeneration).
+  const setSmartDeleted = useCallback(async (habit, deleted) => {
+    const updated = { ...habit, deleted }
+    dispatch({ type: 'UPSERT_HABIT', habit: updated })
+    try {
+      await api.patchSmartDeleted(habit.id, deleted)
+    } catch (err) {
+      dispatch({ type: 'UPSERT_HABIT', habit })
+      errRef.current?.(`Couldn't ${deleted ? 'delete' : 'restore'}: ${err.message}`)
+    }
+  }, [])
+
   const value = useMemo(() => ({
     ...state,
     upsertHabit,
@@ -228,7 +240,8 @@ export function AppStateProvider({ children, onError }) {
     setMantra,
     refresh,
     toggleSmartHidden,
-  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh, toggleSmartHidden])
+    setSmartDeleted,
+  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh, toggleSmartHidden, setSmartDeleted])
 
   return <StateCtx.Provider value={value}>{children}</StateCtx.Provider>
 }

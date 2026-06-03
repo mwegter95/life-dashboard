@@ -13,9 +13,9 @@ export function TodayPanel({
   const { toggleSmartHidden } = useAppState()
   const [showOffSchedule, setShowOffSchedule] = useState(false)
 
-  // A hidden smart reminder drops out of Today entirely (its tile disappears).
-  // Unhide it from the foldable "Hidden" list in the week grid.
-  const visibleHabits = habits.filter(h => !(h.source === 'gcal-ai' && h.hidden))
+  // Hidden or deleted smart reminders drop out of Today entirely (their tiles
+  // disappear). Unhide/restore them from the week grid's lists.
+  const visibleHabits = habits.filter(h => !(h.source === 'gcal-ai' && (h.hidden || h.deleted)))
 
   const dueToday = visibleHabits.filter(h =>
     isDueOn(h, todayISO) ||

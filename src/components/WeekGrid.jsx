@@ -4,13 +4,16 @@ import {
 } from '../lib/frequency.js'
 import { addDays, fromISODate, toISODate, fmtWeekRange, DOW_INITIAL } from '../lib/dates.js'
 import { Icon } from './Icons.jsx'
+import { ConfirmModal } from './ConfirmModal.jsx'
 import { useAppState } from '../state/AppState.jsx'
 
 export function WeekGrid({
   habits, completions, weekStartISO, todayISO, onToggle, onEdit, onDelete,
   onPrevWeek, onNextWeek,
 }) {
-  const { toggleSmartHidden } = useAppState()
+  const { toggleSmartHidden, setSmartDeleted } = useAppState()
+  const [confirmDeleteSmart, setConfirmDeleteSmart] = useState(null) // habit pending delete
+  const [showDeleted, setShowDeleted] = useState(false)              // deleted-list modal
   // Edit mode gates star removal. In normal mode a stray tap can only *add* a
   // star (a safe, reversible action); removing one — or adding an off-day star
   // on a non-scheduled day — requires turning on Edit, so nothing gets deleted
@@ -24,9 +27,10 @@ export function WeekGrid({
   const [showHidden, setShowHidden] = useState(false)
 
   const regularHabits = habits.filter(h => h.source !== 'gcal-ai')
-  const smartHabits   = habits.filter(h => h.source === 'gcal-ai')
+  const smartHabits   = habits.filter(h => h.source === 'gcal-ai' && !h.deleted)
   const visibleSmart  = smartHabits.filter(h => !h.hidden)
   const hiddenSmart   = smartHabits.filter(h => h.hidden)
+  const deletedSmart  = habits.filter(h => h.source === 'gcal-ai' && h.deleted)
 
   const days = useMemo(() => {
     const out = []
@@ -55,7 +59,8 @@ export function WeekGrid({
   }, [habits, completions, days])
 
   return (
-    <div className={'week' + (editMode ? ' editing' : '') + (rowEditMode ? ' row-editing' : '')}>
+    <>
+      <div className={'week' + (editMode ? ' editing' : '') + (rowEditMode ? ' row-editing' : '')}>
       <div className="week-toolbar">
         <div className="week-title">
           <h2>Week</h2>
@@ -132,46 +137,106 @@ export function WeekGrid({
           onEdit={onEdit}
           onDelete={onDelete}
           onToggleHidden={toggleSmartHidden}
+          onDeleteSmart={setConfirmDeleteSmart}
         />
       ))}
-      {hiddenSmart.length > 0 && (
-        <>
-          <button
-            type="button"
-            className="week-hidden-toggle"
-            aria-expanded={showHidden}
-            onClick={() => setShowHidden(v => !v)}
-          >
-            <span className={'chev' + (showHidden ? ' open' : '')}>›</span>
-            Hidden
-            <span className="count">{hiddenSmart.length}</span>
-          </button>
-          {showHidden && hiddenSmart.map(h => (
-            <WeekRow
-              key={h.id}
-              habit={h}
-              days={days}
-              completions={completions}
-              todayISO={todayISO}
-              editMode={editMode}
-              rowEditMode={false}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggleHidden={toggleSmartHidden}
-            />
-          ))}
-        </>
+      {(hiddenSmart.length > 0 || deletedSmart.length > 0) && (
+        <div className="week-smart-controls">
+          {hiddenSmart.length > 0 && (
+            <button
+              type="button"
+              className="week-pill"
+              aria-expanded={showHidden}
+              onClick={() => setShowHidden(v => !v)}
+            >
+              <span className={'chev' + (showHidden ? ' open' : '')}>›</span>
+              Hidden <span className="count">{hiddenSmart.length}</span>
+            </button>
+          )}
+          {deletedSmart.length > 0 && (
+            <button
+              type="button"
+              className="week-pill"
+              onClick={() => setShowDeleted(true)}
+            >
+              <Icon.Trash /> Deleted <span className="count">{deletedSmart.length}</span>
+            </button>
+          )}
+        </div>
       )}
+      {showHidden && hiddenSmart.map(h => (
+        <WeekRow
+          key={h.id}
+          habit={h}
+          days={days}
+          completions={completions}
+          todayISO={todayISO}
+          editMode={editMode}
+          rowEditMode={false}
+          onToggle={onToggle}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onToggleHidden={toggleSmartHidden}
+          onDeleteSmart={setConfirmDeleteSmart}
+        />
+      ))}
       <div className="week-foot">
         <span>{habits.length} tracked</span>
         <span>{weekTotals.earned} / {weekTotals.possible} pts</span>
+      </div>
+      </div>
+
+      {confirmDeleteSmart && (
+        <ConfirmModal
+          title="Are you sure you want to delete?"
+          message={`"${confirmDeleteSmart.name}" will be removed. You can restore it later from the Deleted list, and future syncs won't bring it back.`}
+          confirmLabel="Delete reminder"
+          onConfirm={() => { setSmartDeleted(confirmDeleteSmart, true); setConfirmDeleteSmart(null) }}
+          onClose={() => setConfirmDeleteSmart(null)}
+        />
+      )}
+      {showDeleted && (
+        <DeletedModal
+          deleted={deletedSmart}
+          onRestore={(h) => setSmartDeleted(h, false)}
+          onClose={() => setShowDeleted(false)}
+        />
+      )}
+    </>
+  )
+}
+
+function DeletedModal({ deleted, onRestore, onClose }) {
+  return (
+    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal" role="dialog" aria-modal="true">
+        <div className="modal-hd">
+          <h3>Deleted reminders</h3>
+          <button className="x" onClick={onClose} aria-label="Close"><Icon.X /></button>
+        </div>
+        <div className="modal-body">
+          {deleted.length === 0 ? (
+            <p className="confirm-msg">No deleted reminders.</p>
+          ) : (
+            <div className="deleted-list">
+              {deleted.map(h => (
+                <div key={h.id} className="deleted-row">
+                  <div className="deleted-name">
+                    {h.name}
+                    <span className="deleted-meta">{freqLabel(h.freq)}</span>
+                  </div>
+                  <button type="button" className="btn tiny" onClick={() => onRestore(h)}>Restore</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden }) {
+function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden, onDeleteSmart }) {
   const rowTotal = useMemo(() => {
     let earned = 0, possible = 0
     days.forEach(d => {
@@ -200,14 +265,27 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
           </div>
         </div>
         {onToggleHidden && (
-          <button
-            type="button"
-            className="eye-btn"
-            onClick={() => onToggleHidden(habit)}
-            aria-label={habit.hidden ? 'Show reminder' : 'Hide reminder'}
-          >
-            {habit.hidden ? <Icon.EyeSlash /> : <Icon.Eye />}
-          </button>
+          <div className="smart-row-actions">
+            <button
+              type="button"
+              className="eye-btn"
+              onClick={() => onToggleHidden(habit)}
+              aria-label={habit.hidden ? 'Show reminder' : 'Hide reminder'}
+            >
+              {habit.hidden ? <Icon.EyeSlash /> : <Icon.Eye />}
+            </button>
+            {onDeleteSmart && (
+              <button
+                type="button"
+                className="eye-btn delete"
+                onClick={() => onDeleteSmart(habit)}
+                aria-label="Delete reminder"
+                title="Delete reminder"
+              >
+                <Icon.Trash />
+              </button>
+            )}
+          </div>
         )}
         {rowEditMode && (
           <div className="edit-row">

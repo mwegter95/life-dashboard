@@ -561,21 +561,41 @@
   color: var(--faint);
 }
 
-/* Foldable "Hidden (N)" sub-list at the bottom of the calendar reminders. */
-.week-hidden-toggle {
-  display: flex; align-items: center; gap: 6px;
-  width: 100%; text-align: left;
-  padding: 8px 16px;
-  background: none; border: none; border-top: 0.5px solid var(--border);
-  font-family: "Geist Mono", monospace; font-size: 11px; letter-spacing: 0.04em;
-  text-transform: uppercase; color: var(--muted); cursor: pointer;
+/* Hidden / Deleted controls row at the bottom of the calendar reminders. */
+.week-smart-controls {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 8px 16px; border-top: 0.5px solid var(--border);
 }
-.week-hidden-toggle:hover { color: var(--ink-2); }
-.week-hidden-toggle .chev { display: inline-block; transition: transform .15s; }
-.week-hidden-toggle .chev.open { transform: rotate(90deg); }
-.week-hidden-toggle .count {
-  margin-left: 6px; background: var(--surface-2);
-  border-radius: 999px; padding: 1px 7px; font-size: 10px;
+.week-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: var(--rule); border-radius: 999px;
+  padding: 4px 10px; cursor: pointer;
+  font-family: "Geist Mono", monospace; font-size: 11px; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted);
+  transition: color .12s, border-color .12s;
+}
+.week-pill:hover { color: var(--ink-2); border-color: var(--border-strong); }
+.week-pill svg { width: 13px; height: 13px; }
+.week-pill .chev { display: inline-block; transition: transform .15s; }
+.week-pill .chev.open { transform: rotate(90deg); }
+.week-pill .count {
+  background: var(--bg); border-radius: 999px; padding: 1px 7px; font-size: 10px;
+}
+
+/* Eye + trash actions on a smart reminder row. */
+.smart-row-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.eye-btn.delete:hover { color: var(--fire); }
+
+/* Deleted-reminders modal list. */
+.deleted-list { display: flex; flex-direction: column; }
+.deleted-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 0; border-top: 0.5px solid var(--border);
+}
+.deleted-row:first-child { border-top: 0; }
+.deleted-name { font-size: 13.5px; color: var(--ink); min-width: 0; }
+.deleted-meta {
+  display: block; font-size: 10.5px; font-family: "Geist Mono", monospace; color: var(--muted);
 }
 
 /* Per-row edit/delete controls. Live in the label column (clear of the star
