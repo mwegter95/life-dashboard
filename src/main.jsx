@@ -22,12 +22,18 @@ applyTheme(getInitialTheme())
  * Only fires when window.parent !== window (i.e. we ARE embedded).
  */
 if (typeof window !== 'undefined' && window.parent !== window) {
+  // Mark embedded so CSS can drop `.app { min-height: 100vh }`. Otherwise the
+  // app is always ≥ the (parent-controlled) iframe height, scrollHeight gets
+  // floored at the viewport, and the reported height can only grow — leaving
+  // stale blank space and a stretched mantra after collapsing the Hidden list.
+  document.documentElement.classList.add('embedded')
   const postHeight = () => {
-    const h = Math.max(
-      document.documentElement.scrollHeight,
-      document.body?.scrollHeight ?? 0
+    // Measure the ACTUAL rendered content height (not documentElement.scrollHeight,
+    // which is floored by the iframe viewport) so the height shrinks too.
+    const h = Math.ceil(
+      document.body?.getBoundingClientRect().height || document.body?.scrollHeight || 0
     )
-    window.parent.postMessage({ type: 'life-dashboard:height', height: h }, '*')
+    if (h) window.parent.postMessage({ type: 'life-dashboard:height', height: h }, '*')
   }
   // Fire often during load (fonts, async data) and any time the DOM resizes.
   const ro = new ResizeObserver(postHeight)

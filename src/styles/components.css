@@ -13,6 +13,10 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
 }
+/* When embedded in an iframe (michaelwegter.com), the parent sizes the iframe to
+   our reported content height. Forcing 100vh here would make us never shrink
+   below the iframe's current height (a feedback loop) — so hug content instead. */
+.embedded body, .embedded .app { min-height: 0; }
 
 .topbar {
   display: grid;
