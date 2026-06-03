@@ -3,7 +3,6 @@ import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
 } from '../lib/frequency.js'
 import { addDays, fromISODate, toISODate, fmtWeekRange, DOW_INITIAL } from '../lib/dates.js'
-import { ChainLink } from './ChainLink.jsx'
 import { Icon } from './Icons.jsx'
 import { useAppState } from '../state/AppState.jsx'
 
@@ -20,9 +19,13 @@ export function WeekGrid({
   // stray click can't open the editor or delete a habit. Off by default; the
   // buttons only appear (in the label, clear of the star grid) when it's on.
   const [rowEditMode, setRowEditMode] = useState(false)
+  // Hidden smart reminders collapse into a foldable sub-list at the bottom.
+  const [showHidden, setShowHidden] = useState(false)
 
   const regularHabits = habits.filter(h => h.source !== 'gcal-ai')
   const smartHabits   = habits.filter(h => h.source === 'gcal-ai')
+  const visibleSmart  = smartHabits.filter(h => !h.hidden)
+  const hiddenSmart   = smartHabits.filter(h => h.hidden)
 
   const days = useMemo(() => {
     const out = []
@@ -108,7 +111,7 @@ export function WeekGrid({
           <span>Calendar reminders</span>
         </div>
       )}
-      {smartHabits.map(h => (
+      {visibleSmart.map(h => (
         <WeekRow
           key={h.id}
           habit={h}
@@ -123,6 +126,35 @@ export function WeekGrid({
           onToggleHidden={toggleSmartHidden}
         />
       ))}
+      {hiddenSmart.length > 0 && (
+        <>
+          <button
+            type="button"
+            className="week-hidden-toggle"
+            aria-expanded={showHidden}
+            onClick={() => setShowHidden(v => !v)}
+          >
+            <span className={'chev' + (showHidden ? ' open' : '')}>›</span>
+            Hidden
+            <span className="count">{hiddenSmart.length}</span>
+          </button>
+          {showHidden && hiddenSmart.map(h => (
+            <WeekRow
+              key={h.id}
+              habit={h}
+              days={days}
+              completions={completions}
+              todayISO={todayISO}
+              editMode={editMode}
+              rowEditMode={false}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleHidden={toggleSmartHidden}
+            />
+          ))}
+        </>
+      )}
       <div className="week-foot">
         <span>{habits.length} tracked</span>
         <span>{weekTotals.earned} / {weekTotals.possible} pts</span>
@@ -206,9 +238,6 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         const bonus = c && typeof c === 'object' && c.bonus
         const missed = due && !filled && d.iso < todayISO
         const isToday = d.iso === todayISO
-        const nextIso = days[idx + 1]?.iso
-        const nextDone = nextIso && isDoneFor(habit, nextIso, completions)
-        const chainToNext = habit.freq?.kind === 'daily' && done && nextDone
 
         // Interactivity contract:
         //  • normal mode → only an empty, *due*, non-future cell is tappable,
@@ -253,7 +282,6 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
                 {mark}
               </button>
             ) : mark}
-            {chainToNext && <ChainLink orient={idx % 2 === 0 ? 'hv' : 'vh'} bonus={bonus} />}
           </div>
         )
       })}

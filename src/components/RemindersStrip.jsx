@@ -6,6 +6,7 @@ export function RemindersStrip({ habits, completions, todayISO, onToggle }) {
   const upcoming = useMemo(() => {
     const list = []
     habits.forEach(h => {
+      if (h.hidden) return   // hidden smart reminders drop out of the strip too
       if (h.freq?.kind === 'date') {
         const days = daysBetween(todayISO, h.freq.date)
         if (days >= -1 && days <= 21 && !isDoneFor(h, h.freq.date, completions)) {
