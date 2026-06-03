@@ -68,6 +68,7 @@ function Dashboard({ toasts, pushToast }) {
   const [confirmDelete, setConfirmDelete] = useState(null) // null | habit
   const [authOpen, setAuthOpen] = useState(false)
   const [fx, setFx] = useState(null)
+  const [weekOffset, setWeekOffset] = useState(0)   // 0 = current week; ± to browse
 
   /* Update todayISO at midnight without requiring a reload. */
   useEffect(() => {
@@ -99,6 +100,9 @@ function Dashboard({ toasts, pushToast }) {
   const scoreYesterday = dayScore(habits, completions, toISODate(addDays(fromISODate(todayISO), -1)))
   const weekStartISO   = toISODate(startOfWeek(fromISODate(todayISO), true))
   const lastWeekStartISO = toISODate(addDays(fromISODate(weekStartISO), -7))
+  // The week grid can browse other weeks without affecting the stats panels,
+  // which always reflect the real current week.
+  const viewedWeekStartISO = toISODate(addDays(fromISODate(weekStartISO), weekOffset * 7))
 
   const scoreThisWeek = useMemo(() => {
     let s = 0
@@ -278,11 +282,13 @@ function Dashboard({ toasts, pushToast }) {
           <WeekGrid
             habits={habits}
             completions={completions}
-            weekStartISO={weekStartISO}
+            weekStartISO={viewedWeekStartISO}
             todayISO={todayISO}
             onToggle={toggleHabit}
             onEdit={(h) => setModal({ mode: 'edit', habit: h })}
             onDelete={requestDelete}
+            onPrevWeek={() => setWeekOffset(o => o - 1)}
+            onNextWeek={() => setWeekOffset(o => o + 1)}
           />
           <div style={{
             padding: '14px 4px 0',

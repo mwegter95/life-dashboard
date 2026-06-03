@@ -101,7 +101,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 18px;
+  padding: 7px 18px;
   background: var(--surface);
   border: var(--rule);
   border-radius: var(--radius);
@@ -347,10 +347,37 @@
   border-radius: var(--radius);
   overflow: hidden;
 }
+/* Toolbar above the day row: week title + prev/next nav on the left, the
+   horizontal edit toggles on the right. */
+.week-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 12px;
+  padding: 14px 16px 8px;
+}
+.week-toolbar .week-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.week-toolbar h2 {
+  margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-2);
+}
+.week-nav { display: flex; align-items: center; gap: 6px; }
+.week-nav .sub {
+  font-size: 11.5px; color: var(--muted); font-family: "Geist Mono", monospace;
+  min-width: 96px; text-align: center;
+}
+.week-nav-btn {
+  width: 24px; height: 24px; flex-shrink: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: var(--rule); border-radius: 6px; background: var(--surface-2);
+  color: var(--ink-2); cursor: pointer; font-size: 16px; line-height: 1;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.week-nav-btn:hover { background: var(--surface); color: var(--ink); border-color: var(--border-strong); }
+.week-nav-btn:active { transform: scale(0.92); }
+
 .week-hd {
   display: grid;
   grid-template-columns: 1fr repeat(7, var(--cell-w)) 56px;
-  padding: 14px 0 10px 0;
+  padding: 4px 0 10px 0;
   border-bottom: var(--rule);
   align-items: center;
 }
@@ -411,13 +438,13 @@
   border-left: 0.5px solid var(--border);
   position: relative;
 }
-.@media (max-width: 720px) {
-.  /* On narrow screens, top-align task rows so wrapped names don't vertically
-.     misplace the small action buttons (eyeball). Keep desktop centered. */
-.  .task { align-items: flex-start; grid-template-columns: 28px 1fr auto; }
-.  .task .right-col { align-items: flex-start; }
-.  .eye-btn { margin-top: 4px; }
-.}
+@media (max-width: 720px) {
+  /* Top-align task rows so wrapped names don't vertically misplace the small
+     action buttons (eye). Keep desktop centered. */
+  .task { align-items: flex-start; }
+  .task .right-col { align-items: flex-start; }
+  .eye-btn { margin-top: 2px; }
+}
 .cell.today { background: oklch(from var(--gold) 92% 0.04 80 / 0.4); }
 .cell.not-due {
   background-image: repeating-linear-gradient(135deg,
@@ -456,19 +483,17 @@
 .cell.today .cell-btn:hover { background: oklch(from var(--gold) 90% 0.08 80); }
 .cell-btn:active { transform: scale(0.92); }
 
-/* Edit toggles (week header) — pill buttons that gate star edits and row edits */
-.week-hd .title-col .edit-toggles {
-  margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px;
-}
-.week-hd .title-col .edit-toggle {
+/* Edit toggles (week toolbar) — pill buttons that gate star edits and row edits */
+.edit-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.edit-toggle {
   font: inherit; font-size: 11px; font-family: "Geist Mono", monospace;
   color: var(--muted); background: var(--surface-2);
   border: var(--rule); border-radius: 999px;
   padding: 3px 10px; cursor: pointer; white-space: nowrap;
   transition: background .12s, color .12s, border-color .12s;
 }
-.week-hd .title-col .edit-toggle:hover { color: var(--ink-2); border-color: var(--border-strong); }
-.week-hd .title-col .edit-toggle.active {
+.edit-toggle:hover { color: var(--ink-2); border-color: var(--border-strong); }
+.edit-toggle.active {
   background: var(--gold-deep); color: var(--bg); border-color: var(--gold-deep);
 }
 /* In edit mode every tappable cell shows a faint frame, and hovering a filled
@@ -674,7 +699,7 @@
 .reminder .when.soon { color: var(--fire); }
 .reminder .what { font-size: 14px; line-height: 1.25; }
 .reminder .meta { font-size: 11px; color: var(--muted); font-family: "Geist Mono", monospace; }
-.reminder .action { margin-top: 4px; }
+.reminder .action { margin-top: 4px; display: flex; align-items: center; gap: 8px; }
 
 /* ─────────────────────────── Add habit modal ─────────────────────────── */
 .modal-bg {
@@ -868,6 +893,14 @@
   .stat-pill { padding: 6px 9px; }
   .stat-pill .label { display: none; }
   .main { padding: 16px 12px; gap: 16px; }
+  /* Tighter Today panel so it hugs the habits + the off-day line. */
+  .panel.today .today-context { padding: 6px 16px 8px; }
+  .panel.today .panel-body { padding: 2px 0 4px; }
+  /* Calendar-reminder rows: stack the eye BELOW the title so the narrow label
+     column isn't squeezed to a sliver (which made rows absurdly tall). */
+  .week-row .label {
+    flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;
+  }
   :root { --cell-w: 32px; }
   /* Tighter than the desktop grid so the whole week fits in an iPhone-Pro
      viewport (≈393px) without horizontal scroll.

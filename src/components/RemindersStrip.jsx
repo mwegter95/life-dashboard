@@ -1,8 +1,11 @@
 import { useMemo } from 'react'
 import { daysBetween } from '../lib/dates.js'
 import { isDoneFor } from '../lib/frequency.js'
+import { Icon } from './Icons.jsx'
+import { useAppState } from '../state/AppState.jsx'
 
 export function RemindersStrip({ habits, completions, todayISO, onToggle }) {
+  const { toggleSmartHidden } = useAppState()
   const upcoming = useMemo(() => {
     const list = []
     habits.forEach(h => {
@@ -42,6 +45,16 @@ export function RemindersStrip({ habits, completions, todayISO, onToggle }) {
                 className="btn tiny"
                 onClick={(e) => onToggle(h, h.freq?.date || todayISO, e)}
               >Mark done</button>
+              {h.source === 'gcal-ai' && (
+                <button
+                  type="button"
+                  className="eye-btn"
+                  onClick={() => toggleSmartHidden(h)}
+                  aria-label="Hide reminder"
+                >
+                  <Icon.Eye />
+                </button>
+              )}
             </div>
           </div>
         )

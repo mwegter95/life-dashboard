@@ -8,6 +8,7 @@ import { useAppState } from '../state/AppState.jsx'
 
 export function WeekGrid({
   habits, completions, weekStartISO, todayISO, onToggle, onEdit, onDelete,
+  onPrevWeek, onNextWeek,
 }) {
   const { toggleSmartHidden } = useAppState()
   // Edit mode gates star removal. In normal mode a stray tap can only *add* a
@@ -55,35 +56,42 @@ export function WeekGrid({
 
   return (
     <div className={'week' + (editMode ? ' editing' : '') + (rowEditMode ? ' row-editing' : '')}>
-      <div className="week-hd">
-        <div className="title-col">
+      <div className="week-toolbar">
+        <div className="week-title">
           <h2>Week</h2>
-          <div className="sub">{fmtWeekRange(weekStartISO)}</div>
-          <div className="edit-toggles">
-            <button
-              type="button"
-              className={'edit-toggle' + (editMode ? ' active' : '')}
-              onClick={() => setEditMode(v => !v)}
-              aria-pressed={editMode}
-              title={editMode
-                ? 'Finish editing — taps will no longer remove stars'
-                : 'Turn on to add or remove stars (incl. off-schedule days)'}
-            >
-              {editMode ? '✓ Done' : '✎ Edit stars'}
-            </button>
-            <button
-              type="button"
-              className={'edit-toggle' + (rowEditMode ? ' active' : '')}
-              onClick={() => setRowEditMode(v => !v)}
-              aria-pressed={rowEditMode}
-              title={rowEditMode
-                ? 'Finish editing rows — hides the edit & delete buttons'
-                : 'Turn on to edit or delete habits'}
-            >
-              {rowEditMode ? '✓ Done' : '✎ Edit rows'}
-            </button>
+          <div className="week-nav">
+            <button type="button" className="week-nav-btn" onClick={onPrevWeek} aria-label="Previous week">‹</button>
+            <span className="sub">{fmtWeekRange(weekStartISO)}</span>
+            <button type="button" className="week-nav-btn" onClick={onNextWeek} aria-label="Next week">›</button>
           </div>
         </div>
+        <div className="edit-toggles">
+          <button
+            type="button"
+            className={'edit-toggle' + (editMode ? ' active' : '')}
+            onClick={() => setEditMode(v => !v)}
+            aria-pressed={editMode}
+            title={editMode
+              ? 'Finish editing — taps will no longer remove stars'
+              : 'Turn on to add or remove stars (incl. off-schedule days)'}
+          >
+            {editMode ? '✓ Done' : '✎ Edit stars'}
+          </button>
+          <button
+            type="button"
+            className={'edit-toggle' + (rowEditMode ? ' active' : '')}
+            onClick={() => setRowEditMode(v => !v)}
+            aria-pressed={rowEditMode}
+            title={rowEditMode
+              ? 'Finish editing rows — hides the edit & delete buttons'
+              : 'Turn on to edit or delete habits'}
+          >
+            {rowEditMode ? '✓ Done' : '✎ Edit rows'}
+          </button>
+        </div>
+      </div>
+      <div className="week-hd">
+        <div className="title-col" />
         {days.map(d => (
           <div key={d.iso} className={'day' + (d.iso === todayISO ? ' today' : '')}>
             {DOW_INITIAL[d.d.getDay()]}
