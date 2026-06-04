@@ -682,6 +682,7 @@
 .badges { padding: 14px 16px 18px; }
 .badges-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
 .badge {
+  width: 100%; color: inherit; cursor: pointer;
   aspect-ratio: 1;
   border-radius: 10px;
   border: 0.5px solid var(--border);
@@ -709,6 +710,72 @@
 .badge.earned .name { color: var(--gold-deep); font-weight: 500; }
 .badge-points { font-family: "Geist Mono", monospace; font-size: 8px; color: var(--muted); }
 .badge.earned .badge-points { color: var(--gold-deep); }
+.dark .badge.earned .glyph { color: oklch(28% 0.08 70); }
+
+/* Badge detail popover. */
+.badge-popover-bg {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.modal.modal--badge {
+  position: absolute;
+  width: min(320px, calc(100vw - 24px)); max-width: 320px;
+  padding: 20px; overflow: visible; text-align: center;
+  border-color: var(--gold); box-shadow: 0 16px 48px -18px rgba(20,18,12,.35);
+}
+.badge-popover-close {
+  position: absolute; top: 8px; right: 8px;
+  width: 28px; height: 28px; padding: 7px; border-radius: 50%;
+  display: grid; place-items: center; color: var(--muted);
+}
+.badge-popover-close:hover { background: var(--surface); }
+.badge-popover-close svg { width: 14px; height: 14px; }
+.badge-popover-icon {
+  width: 72px; height: 72px; margin: 0 auto 10px;
+  display: grid; place-items: center; border-radius: 50%;
+  border: var(--rule); background: var(--surface);
+  color: var(--faint); font-size: 34px; line-height: 1;
+}
+.badge-popover-icon.earned {
+  border-color: var(--gold); background: oklch(from var(--gold) 95% 0.06 80);
+  color: oklch(28% 0.08 70);
+}
+.badge-popover-copy { display: flex; flex-direction: column; align-items: center; }
+.badge-popover-kicker {
+  font-family: "Geist Mono", monospace; font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .09em; color: var(--gold-deep);
+}
+.badge-popover-copy h3 {
+  margin: 4px 0 6px; font-size: 18px; font-weight: 600; color: var(--ink);
+}
+.badge-popover-copy p {
+  margin: 0 0 16px; max-width: 250px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2);
+}
+.badge-progress { padding: 12px 0; border-top: var(--rule); border-bottom: var(--rule); }
+.badge-progress-row {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-start; text-align: left;
+}
+.badge-progress-row span {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+}
+.badge-progress-row strong {
+  font-family: "Geist Mono", monospace; font-size: 10.5px; font-weight: 500; color: var(--ink-2);
+}
+.badge-progress-track {
+  height: 6px; margin-top: 9px; overflow: hidden; border-radius: 999px; background: var(--surface-2);
+}
+.badge-progress-track span {
+  display: block; height: 100%; min-width: 2px; border-radius: inherit;
+  background: var(--gold-deep); transition: width .35s ease;
+}
+.badge-popover-reward {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin-top: 12px; font-size: 10.5px; color: var(--muted);
+}
+.badge-popover-reward strong {
+  color: var(--gold-deep); font-family: "Geist Mono", monospace; font-size: 11px;
+}
 
 .reflection {
   padding: 14px 16px 18px;
@@ -788,6 +855,9 @@
   min-height: 100%;
 }
 .embedded .modal.modal--deleted, .embedded .modal.modal--event {
+  max-height: min(420px, calc(var(--embed-viewport-height, 100dvh) - 24px));
+}
+.embedded .modal.modal--badge {
   max-height: min(420px, calc(var(--embed-viewport-height, 100dvh) - 24px));
 }
 @keyframes modal-up { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -1071,22 +1141,35 @@
   /* Tighter Today panel so it hugs the habits + the off-day line. */
   .panel.today .today-context { padding: 6px 16px 8px; }
   .panel.today .panel-body { padding: 2px 0 4px; }
-  /* Calendar-reminder rows: stack the eye BELOW the title so the narrow label
-     column isn't squeezed to a sliver (which made rows absurdly tall). */
-  .week-row .label {
-    flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;
+  /* Give every habit and smart reminder a full-width title line above the
+     star tracks. Smart reminders share WeekRow and carry smart-reminder. */
+  .week-hd {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 52px;
+    padding-top: 8px;
   }
-  :root { --cell-w: 32px; }
-  /* Tighter than the desktop grid so the whole week fits in an iPhone-Pro
-     viewport (≈393px) without horizontal scroll.
-     80 + 7×32 + 44 = 348px content  +  24px main padding  =  372px total. */
-  .week-hd, .week-row {
-    grid-template-columns: 80px repeat(7, var(--cell-w)) 44px;
+  .week-hd .title-col { display: none; }
+  .week-row {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 52px;
+    align-items: stretch;
   }
-  /* Match header + row right insets so the Total column lines up too. */
-  .week-hd .total-col, .row-total { padding-right: 12px; }
+  .week-row .label,
+  .week-row.smart-reminder .label {
+    grid-column: 1 / -1;
+    min-width: 0; padding: 10px 12px 7px;
+    flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 8px;
+  }
+  .week-row .label .label-text { flex: 1; width: auto; }
+  .week-row .label .freq-line { flex-wrap: wrap; column-gap: 6px; row-gap: 2px; }
+  .week-row .smart-row-actions, .week-row .edit-row { margin-left: auto; }
+  .week-row .cell { height: 42px; border-top: 0.5px solid var(--border); }
+  .week-row .row-total {
+    height: 42px; display: flex; align-items: center; justify-content: flex-end;
+    border-top: 0.5px solid var(--border);
+  }
+  .week-section-divider { display: block; padding: 10px 12px 6px; }
+  .week-hd .total-col, .row-total { padding-right: 10px; }
   .week-hd .day { font-size: 9px; }
-  .week-row .label .name { font-size: 12.5px; }
+  .week-row .label .name { font-size: 14px; line-height: 1.25; }
   .reminders { grid-template-columns: 1fr 1fr; gap: 8px; }
   .modal.celebration { padding: 24px 16px 18px; }
   .celebration-hero { width: 92px; height: 92px; }
@@ -1098,10 +1181,7 @@
 /* Smallest phones (older iPhone SE / narrow Android). Goes a notch tighter
    so even at 360px nothing clips. */
 @media (max-width: 380px) {
-  :root { --cell-w: 28px; }
-  .week-hd, .week-row {
-    grid-template-columns: 72px repeat(7, var(--cell-w)) 40px;
-  }
+  .week-hd, .week-row { grid-template-columns: repeat(7, minmax(0, 1fr)) 46px; }
   .main { padding: 14px 10px; }
 }
 

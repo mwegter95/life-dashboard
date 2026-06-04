@@ -359,7 +359,13 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
   const streak = computeStreak(habit, completions, todayISO)
 
   return (
-    <div className={'week-row' + (habit.hidden ? ' smart-hidden' : '')}>
+    <div
+      className={
+        'week-row'
+        + (habit.source === 'gcal-ai' ? ' smart-reminder' : '')
+        + (habit.hidden ? ' smart-hidden' : '')
+      }
+    >
       <div className="label">
         <div
           className={'label-text' + (onOpenEvent ? ' clickable' : '')}
