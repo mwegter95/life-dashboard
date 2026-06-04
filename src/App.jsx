@@ -10,6 +10,7 @@ import { BadgesPanel } from './components/BadgesPanel.jsx'
 import { ReflectionCard } from './components/ReflectionCard.jsx'
 import { AddHabitModal } from './components/AddHabitModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
+import { CelebrationModal } from './components/CelebrationModal.jsx'
 import { MantraCard } from './components/MantraCard.jsx'
 import { CalendarPanel } from './components/CalendarPanel.jsx'
 import { Toasts } from './components/Toasts.jsx'
@@ -19,11 +20,14 @@ import {
   toISODate, fromISODate, addDays, startOfWeek, fmtDateStr,
 } from './lib/dates.js'
 import {
-  isDueOn, isDoneFor, getCompletion, computeStreak,
+  getCompletion, computeStreak,
 } from './lib/frequency.js'
 import {
   scoreCompletion, dayScore, possibleForDay, BONUS_ROLL_CHANCE,
 } from './lib/scoring.js'
+import {
+  badgeBonusScore, computeBadgeStats, newBadgeAwards,
+} from './lib/badges.js'
 import { levelFor } from './lib/levels.js'
 
 const TOAST_TTL = 2200
@@ -68,6 +72,7 @@ function Dashboard({ toasts, pushToast }) {
   const [confirmDelete, setConfirmDelete] = useState(null) // null | habit
   const [authOpen, setAuthOpen] = useState(false)
   const [fx, setFx] = useState(null)
+  const [celebration, setCelebration] = useState(null)
   const [weekOffset, setWeekOffset] = useState(0)   // 0 = current week; ± to browse
 
   /* Update todayISO at midnight without requiring a reload. */
@@ -120,13 +125,12 @@ function Dashboard({ toasts, pushToast }) {
     return s
   }, [habits, completions, lastWeekStartISO])
 
-  const totalScore = useMemo(() => {
-    let s = 0
-    Object.values(completions).forEach(arr =>
-      arr.forEach(c => s += (typeof c === 'object' ? c.scored : 0))
-    )
-    return s
-  }, [completions])
+  const badgeStats = useMemo(
+    () => computeBadgeStats(habits, completions, todayISO),
+    [habits, completions, todayISO]
+  )
+  const badgePoints = badgeBonusScore(badgeStats)
+  const totalScore = badgeStats.completionScore + badgePoints
 
   const bestDay = useMemo(() => {
     const m = new Map()
@@ -142,29 +146,12 @@ function Dashboard({ toasts, pushToast }) {
     return [...m.values()].reduce((a, b) => Math.max(a, b), 0)
   }, [completions, habits])
 
-  const longestStreak = useMemo(() => (
-    habits.reduce((m, h) => Math.max(m, computeStreak(h, completions, todayISO)), 0)
-  ), [habits, completions, todayISO])
-
-  const totalCompletions = useMemo(() => (
-    Object.values(completions).reduce((s, a) => s + a.length, 0)
-  ), [completions])
-
-  const perfectDays = useMemo(() => {
-    let n = 0
-    for (let i = 0; i < 60; i++) {
-      const iso = toISODate(addDays(new Date(), -i))
-      const due = habits.filter(h => isDueOn(h, iso))
-      if (due.length === 0) continue
-      if (due.every(h => isDoneFor(h, iso, completions))) n++
-    }
-    return n
-  }, [habits, completions])
-
   const stats = {
-    totalScore, totalCompletions, longestStreak,
-    perfectDays, perfectWeeks: 0,
+    ...badgeStats,
+    totalScore,
+    badgePoints,
   }
+  const longestStreak = badgeStats.longestStreak
   const lvl = levelFor(totalScore)
   const dateStr = fmtDateStr(fromISODate(todayISO))
 
@@ -183,24 +170,55 @@ function Dashboard({ toasts, pushToast }) {
     const scored = scoreCompletion(habit, streakBefore, bonus)
     const completion = { date: dateISO, scored, bonus }
 
+    const nextCompletions = {
+      ...completions,
+      [habit.id]: [
+        ...(completions[habit.id] || []).filter(c =>
+          (typeof c === 'string' ? c : c.date) !== dateISO
+        ),
+        completion,
+      ],
+    }
+    const nextBadgeStats = computeBadgeStats(habits, nextCompletions, todayISO)
+    const awards = newBadgeAwards(badgeStats, nextBadgeStats)
+    const rewardPoints = awards.reduce((sum, award) => sum + award.pointsEarned, 0)
     const lvlBefore = levelFor(totalScore)
-    const lvlAfter  = levelFor(totalScore + scored)
+    const lvlAfter = levelFor(nextBadgeStats.completionScore + badgeBonusScore(nextBadgeStats))
     const leveled = lvlAfter.idx > lvlBefore.idx
+    const celebrationVariant = Math.floor(Math.random() * 4)
 
     pushToast(
       leveled ? `Level up! ${lvlAfter.cur.name}` :
+      awards.length ? `${awards[0].name} earned!` :
       bonus   ? `Bonus! ${habit.name}` :
                 `Nice — ${habit.name}`,
-      { pts: scored, bonus: bonus || leveled }
+      { pts: scored + rewardPoints, bonus: bonus || leveled || awards.length > 0 }
     )
 
     const rect = evt?.currentTarget?.getBoundingClientRect?.()
     const x = rect ? rect.left + rect.width / 2 : window.innerWidth / 2
     const y = rect ? rect.top + rect.height / 2 : window.innerHeight / 2
-    setFx({ x, y, heavy: bonus || leveled, t: Date.now() })
+    setFx({
+      x: leveled || awards.length ? window.innerWidth / 2 : x,
+      y: leveled || awards.length ? window.innerHeight * 0.42 : y,
+      heavy: bonus || leveled || awards.length > 0,
+      variant: celebrationVariant,
+      t: Date.now(),
+    })
+
+    if (leveled || awards.length) {
+      setCelebration({
+        id: Date.now(),
+        variant: celebrationVariant,
+        level: leveled ? lvlAfter : null,
+        awards,
+        rewardPoints,
+        completionPoints: scored,
+      })
+    }
 
     state.addCompletion(habit.id, completion)
-  }, [state, completions, totalScore, pushToast])
+  }, [state, habits, completions, todayISO, badgeStats, totalScore, pushToast])
 
   const saveHabit = useCallback((h) => {
     state.upsertHabit(h)
@@ -237,14 +255,15 @@ function Dashboard({ toasts, pushToast }) {
         setModal({ mode: 'add' })
       }
       if (e.key === 'Escape') {
-        if (confirmDelete) setConfirmDelete(null)
+        if (celebration) setCelebration(null)
+        else if (confirmDelete) setConfirmDelete(null)
         else if (modal) setModal(null)
         else if (authOpen) setAuthOpen(false)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [modal, authOpen, confirmDelete])
+  }, [modal, authOpen, confirmDelete, celebration])
 
   if (loading && habits.length === 0) {
     return (
@@ -330,6 +349,7 @@ function Dashboard({ toasts, pushToast }) {
             scoreThisWeek={scoreThisWeek}
             scoreLastWeek={scoreLastWeek}
             totalScore={totalScore}
+            badgePoints={badgePoints}
             bestDay={bestDay}
             longestStreak={longestStreak}
             possibleToday={possibleToday}
@@ -370,6 +390,12 @@ function Dashboard({ toasts, pushToast }) {
         <AuthModal
           onClose={() => setAuthOpen(false)}
           defaultMode="login"
+        />
+      )}
+      {celebration && (
+        <CelebrationModal
+          celebration={celebration}
+          onClose={() => setCelebration(null)}
         />
       )}
 

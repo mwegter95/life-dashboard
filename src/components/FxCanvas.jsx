@@ -20,8 +20,15 @@ export function FxCanvas({ trigger }) {
     const cx = trigger.x * dpr
     const cy = trigger.y * dpr
     const heavy = !!trigger.heavy
-    const N = heavy ? 90 : 36
-    const palette = ['#e6b829', '#d97757', '#67a98a', '#5a8bd1', '#c47c4d', '#f1d27a', '#2a261b']
+    const variant = trigger.variant || 0
+    const themes = [
+      { palette: ['#e6b829', '#f1d27a', '#c47c4d', '#2a261b'], shapes: ['star', 'diamond', 'rect'] },
+      { palette: ['#d85757', '#e6b829', '#5a8bd1', '#f4eee1'], shapes: ['circle', 'rect', 'diamond'] },
+      { palette: ['#5a8bd1', '#67a98a', '#e6b829', '#f1d27a'], shapes: ['star', 'circle', 'star'] },
+      { palette: ['#e6b829', '#d97757', '#67a98a', '#5a8bd1', '#c47c4d'], shapes: ['rect', 'star', 'circle'] },
+    ]
+    const theme = themes[variant % themes.length]
+    const N = heavy ? 120 : 36
 
     const parts = Array.from({ length: N }).map(() => {
       const ang = Math.random() * Math.PI * 2
@@ -31,12 +38,12 @@ export function FxCanvas({ trigger }) {
         vx: Math.cos(ang) * spd,
         vy: Math.sin(ang) * spd - 3 * dpr,
         size: (3 + Math.random() * 4) * dpr,
-        color: palette[(Math.random() * palette.length) | 0],
+        color: theme.palette[(Math.random() * theme.palette.length) | 0],
         rot: Math.random() * Math.PI,
         spin: (Math.random() - 0.5) * 0.3,
         life: 0,
         max: 50 + ((Math.random() * 30) | 0),
-        shape: Math.random() < (heavy ? 0.5 : 0.3) ? 'star' : 'rect',
+        shape: theme.shapes[(Math.random() * theme.shapes.length) | 0],
       }
     })
 
@@ -60,6 +67,13 @@ export function FxCanvas({ trigger }) {
         if (p.shape === 'star') {
           drawStar(ctx, 0, 0, p.size * 1.3, p.size * 0.55, 5)
           ctx.fill()
+        } else if (p.shape === 'circle') {
+          ctx.beginPath()
+          ctx.arc(0, 0, p.size * 0.75, 0, Math.PI * 2)
+          ctx.fill()
+        } else if (p.shape === 'diamond') {
+          ctx.rotate(Math.PI / 4)
+          ctx.fillRect(-p.size * 0.7, -p.size * 0.7, p.size * 1.4, p.size * 1.4)
         } else {
           ctx.fillRect(-p.size, -p.size * 0.4, p.size * 2, p.size * 0.8)
         }

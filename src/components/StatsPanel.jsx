@@ -2,7 +2,7 @@ import { levelFor } from '../lib/levels.js'
 
 export function StatsPanel({
   scoreToday, scoreYesterday, scoreThisWeek, scoreLastWeek,
-  totalScore, bestDay, longestStreak, possibleToday,
+  totalScore, badgePoints, bestDay, longestStreak, possibleToday,
 }) {
   const lvl = levelFor(totalScore)
   const delta = scoreToday - scoreYesterday
@@ -51,7 +51,7 @@ export function StatsPanel({
         <div className="m">
           <div className="label">Total</div>
           <div className="v">{totalScore}</div>
-          <div className="compare">lifetime points</div>
+          <div className="compare">{badgePoints} from badges</div>
         </div>
       </div>
     </div>
