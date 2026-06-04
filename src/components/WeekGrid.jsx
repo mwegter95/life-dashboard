@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
 } from '../lib/frequency.js'
 import { addDays, fromISODate, toISODate, fmtWeekRange, DOW_INITIAL } from '../lib/dates.js'
 import { Icon } from './Icons.jsx'
+import * as api from '../lib/api.js'
 import { useAppState } from '../state/AppState.jsx'
 
 export function WeekGrid({
@@ -12,6 +13,8 @@ export function WeekGrid({
 }) {
   const { toggleSmartHidden, setSmartDeleted } = useAppState()
   const [deletedAnchor, setDeletedAnchor] = useState(null)           // deleted-list popover anchor
+  const [eventPopover, setEventPopover] = useState(null)             // { habit, anchor } for the event-detail popover
+  const [eventsById, setEventsById] = useState({})                   // sourceEventId -> Google event details
   // Edit mode gates star removal. In normal mode a stray tap can only *add* a
   // star (a safe, reversible action); removing one — or adding an off-day star
   // on a non-scheduled day — requires turning on Edit, so nothing gets deleted
@@ -24,13 +27,36 @@ export function WeekGrid({
   // Hidden smart reminders collapse into a foldable sub-list at the bottom.
   const [showHidden, setShowHidden] = useState(false)
 
+  // Smart reminders sorted by their due date (the reminder's date), so the
+  // calendar-reminders list reads chronologically instead of in DB order.
+  const byDate = (a, b) => {
+    const da = a.freq?.date || '', db = b.freq?.date || ''
+    return da < db ? -1 : da > db ? 1 : 0
+  }
   const regularHabits = habits.filter(h => h.source !== 'gcal-ai')
   const smartHabits   = habits.filter(h => h.source === 'gcal-ai' && !h.deleted)
-  const visibleSmart  = smartHabits.filter(h => !h.hidden)
-  const hiddenSmart   = smartHabits.filter(h => h.hidden)
+  const visibleSmart  = smartHabits.filter(h => !h.hidden).sort(byDate)
+  const hiddenSmart   = smartHabits.filter(h => h.hidden).sort(byDate)
   const deletedSmart  = habits.filter(h => h.source === 'gcal-ai' && h.deleted)
 
-  const openDeleted = (e) => {
+  // Pull the underlying Google events so clicking a reminder can show the real
+  // event (most importantly its date). Only fetch when smart reminders exist.
+  const hasSmart = smartHabits.length > 0 || deletedSmart.length > 0
+  useEffect(() => {
+    if (!hasSmart) return
+    let cancelled = false
+    api.gcalEvents(180).then(({ events }) => {
+      if (cancelled) return
+      const map = {}
+      ;(events || []).forEach(ev => { map[ev.id] = ev })
+      setEventsById(map)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [hasSmart])
+
+  // Position a popover near the clicked element, clamped to the visible viewport
+  // (handles the embedded-in-iframe case via the --embed-viewport-* vars).
+  const anchorFor = (e, popoverH) => {
     const rect = e.currentTarget.getBoundingClientRect()
     const root = document.documentElement
     const embedded = root.classList.contains('embedded')
@@ -43,14 +69,16 @@ export function WeekGrid({
       : window.innerHeight
     const scrollY = embedded ? window.scrollY : 0
     const popoverW = Math.min(360, window.innerWidth - 24)
-    const popoverH = 360
     const minTop = visibleTop + 12
     const maxTop = Math.max(minTop, visibleTop + visibleHeight - popoverH - 12)
-    setDeletedAnchor({
+    return {
       top: Math.max(minTop, Math.min(rect.bottom + scrollY + 8, maxTop)),
       left: Math.max(12, Math.min(rect.left, window.innerWidth - popoverW - 12)),
-    })
+    }
   }
+
+  const openDeleted = (e) => setDeletedAnchor(anchorFor(e, 360))
+  const openEvent = (habit, e) => setEventPopover({ habit, anchor: anchorFor(e, 260) })
 
   const days = useMemo(() => {
     const out = []
@@ -158,6 +186,7 @@ export function WeekGrid({
           onDelete={onDelete}
           onToggleHidden={toggleSmartHidden}
           onDeleteSmart={(h) => setSmartDeleted(h, true)}
+          onOpenEvent={openEvent}
         />
       ))}
       {(hiddenSmart.length > 0 || deletedSmart.length > 0) && (
@@ -198,6 +227,7 @@ export function WeekGrid({
           onDelete={onDelete}
           onToggleHidden={toggleSmartHidden}
           onDeleteSmart={(h) => setSmartDeleted(h, true)}
+          onOpenEvent={openEvent}
         />
       ))}
       <div className="week-foot">
@@ -214,7 +244,70 @@ export function WeekGrid({
           onClose={() => setDeletedAnchor(null)}
         />
       )}
+      {eventPopover && (
+        <EventPopover
+          habit={eventPopover.habit}
+          event={eventsById[eventPopover.habit.sourceEventId]}
+          anchor={eventPopover.anchor}
+          onClose={() => setEventPopover(null)}
+        />
+      )}
     </>
+  )
+}
+
+/* Formats the underlying event's real date/time (the thing people actually want
+   to see — e.g. when the birthday IS, not just when the gift reminder fires). */
+function fmtEventWhen(ev) {
+  if (!ev || !ev.start) return ''
+  const dayOpts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
+  const start = new Date(ev.allDay ? ev.start.slice(0, 10) + 'T00:00:00' : ev.start)
+  if (isNaN(start)) return ev.date || ''
+  if (ev.allDay) {
+    if (ev.end) {
+      // all-day end is exclusive; step back a day for the inclusive last day
+      const last = new Date(ev.end.slice(0, 10) + 'T00:00:00')
+      last.setDate(last.getDate() - 1)
+      if (last > start) {
+        return start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+          ' – ' + last.toLocaleDateString(undefined, dayOpts)
+      }
+    }
+    return start.toLocaleDateString(undefined, dayOpts)
+  }
+  return start.toLocaleDateString(undefined, dayOpts) + ' · ' +
+    start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+function fmtShortDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso.slice(0, 10) + 'T00:00:00')
+  return isNaN(d) ? iso : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function EventPopover({ habit, event, anchor, onClose }) {
+  return (
+    <div className="modal-bg modal-bg--popover" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal--event" role="dialog" aria-modal="true" style={anchor}>
+        <div className="modal-hd">
+          <h3>{event?.title || habit.name}</h3>
+          <button className="x" onClick={onClose} aria-label="Close"><Icon.X /></button>
+        </div>
+        <div className="modal-body">
+          {event ? (
+            <div className="event-details">
+              <div className="event-when">{fmtEventWhen(event)}</div>
+              {event.location && <div className="event-loc">{event.location}</div>}
+              <div className="event-note">Reminder fires {fmtShortDate(habit.freq?.date)}</div>
+            </div>
+          ) : (
+            <p className="confirm-msg">
+              Couldn’t load the calendar event details. This reminder is set for {fmtShortDate(habit.freq?.date)}.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -248,7 +341,7 @@ function DeletedModal({ deleted, anchor, onRestore, onClose }) {
   )
 }
 
-function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden, onDeleteSmart }) {
+function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden, onDeleteSmart, onOpenEvent }) {
   const rowTotal = useMemo(() => {
     let earned = 0, possible = 0
     days.forEach(d => {
@@ -268,7 +361,14 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
   return (
     <div className={'week-row' + (habit.hidden ? ' smart-hidden' : '')}>
       <div className="label">
-        <div className="label-text">
+        <div
+          className={'label-text' + (onOpenEvent ? ' clickable' : '')}
+          onClick={onOpenEvent ? (e) => onOpenEvent(habit, e) : undefined}
+          role={onOpenEvent ? 'button' : undefined}
+          tabIndex={onOpenEvent ? 0 : undefined}
+          title={onOpenEvent ? 'See the event details' : undefined}
+          onKeyDown={onOpenEvent ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenEvent(habit, e) } } : undefined}
+        >
           <div className="name">{habit.name}</div>
           <div className="freq-line">
             <span>{freqLabel(habit.freq)}</span>

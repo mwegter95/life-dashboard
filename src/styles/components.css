@@ -601,11 +601,24 @@
   align-items: flex-start; justify-content: flex-start;
   padding: 0;
 }
-.modal.modal--deleted {
+.modal.modal--deleted, .modal.modal--event {
   position: absolute;
   width: min(360px, calc(100vw - 24px));
   max-width: 360px;
   max-height: min(420px, calc(100dvh - 24px));
+}
+
+/* Clickable reminder title → opens the event-detail popover. */
+.label-text.clickable { cursor: pointer; border-radius: 6px; }
+.label-text.clickable:hover .name { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Event-detail popover body. */
+.event-details { display: flex; flex-direction: column; gap: 8px; }
+.event-when { font-size: 16px; font-weight: 500; color: var(--ink); }
+.event-loc { font-size: 13px; color: var(--ink-2); }
+.event-note {
+  font-size: 11px; font-family: "Geist Mono", monospace; color: var(--muted);
+  margin-top: 2px;
 }
 
 /* Per-row edit/delete controls. Live in the label column (clear of the star
@@ -766,7 +779,7 @@
   inset: 0;
   min-height: 100%;
 }
-.embedded .modal.modal--deleted {
+.embedded .modal.modal--deleted, .embedded .modal.modal--event {
   max-height: min(420px, calc(var(--embed-viewport-height, 100dvh) - 24px));
 }
 @keyframes modal-up { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
