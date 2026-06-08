@@ -343,11 +343,20 @@ function DeletedModal({ deleted, anchor, onRestore, onClose }) {
 
 function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden, onDeleteSmart, onOpenEvent }) {
   const rowTotal = useMemo(() => {
+    const smart = habit.source === 'gcal-ai'
     let earned = 0, possible = 0
     days.forEach(d => {
-      if (isDueOn(habit, d.iso)) {
+      const logged = isDoneFor(habit, d.iso, completions)
+      if (smart) {
+        // Free-form to-do: every logged day counts; no "missed" possible.
+        if (logged) {
+          const c = getCompletion(habit, d.iso, completions)
+          const pts = c?.scored || habit.points
+          earned += pts; possible += pts
+        }
+      } else if (isDueOn(habit, d.iso)) {
         possible += habit.points
-        if (isDoneFor(habit, d.iso, completions)) {
+        if (logged) {
           const c = getCompletion(habit, d.iso, completions)
           earned += c?.scored || habit.points
         }
@@ -450,16 +459,19 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         const isToday = d.iso === todayISO
 
         // Interactivity contract:
-        //  • normal mode → only an empty, *due*, non-future cell is tappable,
-        //    and tapping can only ADD a star (safe, reversible). Filled cells
-        //    are inert so a stray tap can't delete a completion.
-        //  • edit mode → every non-future cell is tappable and toggles freely,
-        //    so you can remove a mis-tap or add an off-schedule star.
-        const interactive = isFuture ? false : (editMode ? true : (due && !filled))
+        //  • normal mode → an empty, non-future cell is tappable to ADD a star
+        //    (safe, reversible). For regular habits that's the *due* day; smart
+        //    reminders are free-form to-dos, so ANY day is tappable and you can
+        //    log several days. Filled cells stay inert so a stray tap can't
+        //    delete a completion.
+        //  • edit mode → every non-future cell toggles freely (add or remove).
+        const interactive = isFuture ? false : (editMode ? true : ((due || isSmart) && !filled))
 
         const cls =
           'cell'
-          + (!due ? ' not-due' : '')
+          // Smart reminders are actionable on any day, so skip the "not due"
+          // dimming/stripes that would make those days look unavailable.
+          + (!due && !isSmart ? ' not-due' : '')
           + (isFuture ? ' future' : '')
           + (isToday ? ' today' : '')
           + (done ? ' done' : '')
@@ -485,7 +497,7 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
                 aria-label={filled ? 'remove star' : 'add star'}
                 title={
                   filled ? 'Tap to remove'
-                  : due ? 'Tap to mark done'
+                  : (due || isSmart) ? 'Tap to mark done'
                   : 'Tap to log an off-schedule star'
                 }
               >
