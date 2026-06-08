@@ -357,12 +357,11 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
   }, [habit, days, completions])
 
   const streak = computeStreak(habit, completions, todayISO)
-  // Smart reminders are one-time, and their completion is recorded on the
-  // event's date — which often sits in a different week than the one on
-  // screen, so the grid star isn't visible. Show a persistent "done" star on
-  // the row itself so marking one done in the tiles reflects here right away.
+  // Smart reminders are one-time to-dos. A logged day counts as done and shows
+  // a solid star (like a regular habit) even though it isn't a scheduled "due"
+  // day, and a completed reminder's past due-date shouldn't read as "missed".
   const isSmart = habit.source === 'gcal-ai'
-  const reminderDone = isSmart && (completions[habit.id]?.length > 0)
+  const smartCompleted = isSmart && (completions[habit.id]?.length > 0)
 
   return (
     <div
@@ -370,7 +369,6 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         'week-row'
         + (habit.source === 'gcal-ai' ? ' smart-reminder' : '')
         + (habit.hidden ? ' smart-hidden' : '')
-        + (reminderDone ? ' reminder-done' : '')
       }
     >
       <div className="label">
@@ -382,18 +380,10 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
           title={onOpenEvent ? 'See the event details' : undefined}
           onKeyDown={onOpenEvent ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenEvent(habit, e) } } : undefined}
         >
-          <div className="name">
-            {habit.name}
-            {reminderDone && (
-              <span className="reminder-done-star" title="Marked done" aria-label="Marked done">
-                <Icon.Star />
-              </span>
-            )}
-          </div>
+          <div className="name">{habit.name}</div>
           <div className="freq-line">
             <span>{freqLabel(habit.freq)}</span>
             <span className="pts-badge">· {habit.points}pt</span>
-            {reminderDone && <span className="done-badge">· done</span>}
             {streak > 1 && <span className="streak-badge">· {streak}🔥</span>}
           </div>
         </div>
@@ -447,15 +437,16 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         const due = isDueOn(habit, d.iso)
         const isFuture = d.iso > todayISO
         const loggedHere = isDoneFor(habit, d.iso, completions)
-        const done = due && loggedHere
-        // An off-day completion: a day the habit wasn't due but was logged
-        // anyway (e.g. a Sunday habit done on Thursday). Show it faintly so
-        // the credit is visible in the grid.
-        const offDone = !due && loggedHere
+        // A smart reminder logged on any day counts as done and shows a solid
+        // star (it's a one-time to-do, not a scheduled day). A regular habit
+        // logged off-schedule stays a faint off-day mark.
+        const done = loggedHere && (due || isSmart)
+        const offDone = loggedHere && !due && !isSmart
         const filled = done || offDone
         const c = filled ? getCompletion(habit, d.iso, completions) : null
         const bonus = c && typeof c === 'object' && c.bonus
-        const missed = due && !filled && d.iso < todayISO
+        // Don't flag a completed reminder's past due-date as missed.
+        const missed = due && !filled && d.iso < todayISO && !smartCompleted
         const isToday = d.iso === todayISO
 
         // Interactivity contract:

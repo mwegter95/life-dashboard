@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { daysBetween } from '../lib/dates.js'
-import { isDoneFor } from '../lib/frequency.js'
 import { Icon } from './Icons.jsx'
 import { useAppState } from '../state/AppState.jsx'
 
@@ -12,7 +11,9 @@ export function RemindersStrip({ habits, completions, todayISO, onToggle }) {
       if (h.hidden || h.deleted) return   // hidden/deleted smart reminders drop out of the strip too
       if (h.freq?.kind === 'date') {
         const days = daysBetween(todayISO, h.freq.date)
-        if (days >= -1 && days <= 21 && !isDoneFor(h, h.freq.date, completions)) {
+        // A reminder is "done" once it has any completion (recorded on the day
+        // it was marked done), so it leaves the strip after Mark done.
+        if (days >= -1 && days <= 21 && !((completions[h.id] || []).length)) {
           list.push({ h, days })
         }
       }
@@ -43,7 +44,7 @@ export function RemindersStrip({ habits, completions, todayISO, onToggle }) {
             <div className="action">
               <button
                 className="btn tiny"
-                onClick={(e) => onToggle(h, h.freq?.date || todayISO, e)}
+                onClick={(e) => onToggle(h, todayISO, e)}
               >Mark done</button>
               {h.source === 'gcal-ai' && (
                 <button

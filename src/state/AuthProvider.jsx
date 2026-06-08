@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import * as api from '../lib/api.js'
+import { whenEmbedTokenReady } from '../lib/embedAuth.js'
 
 const AuthCtx = createContext(null)
 
@@ -25,12 +26,16 @@ export function AuthProvider({ children }) {
     }
 
     let cancelled = false
-    api.authMe().then(u => {
-      if (!cancelled) {
-        setUser(u || null)
-        setBootstrapping(false)
-      }
-    })
+    // Wait for the embedded-token handshake (no-op / instant when not embedded)
+    // so a token recovered from the parent shell is in place before authMe.
+    whenEmbedTokenReady()
+      .then(() => api.authMe())
+      .then(u => {
+        if (!cancelled) {
+          setUser(u || null)
+          setBootstrapping(false)
+        }
+      })
     return () => { cancelled = true }
   }, [])
 

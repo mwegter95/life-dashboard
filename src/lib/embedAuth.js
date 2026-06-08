@@ -9,6 +9,10 @@
  * localStorage and hands it back when this app boots. See AppFrame.jsx on
  * michaelwegter.com for the parent half of this protocol.
  *
+ * We adopt the recovered token in place and let the normal auth bootstrap use
+ * it (the bootstrap waits on whenEmbedTokenReady()) — deliberately NOT a page
+ * reload, which could re-fetch state mid-action and revert optimistic edits.
+ *
  * Protocol (postMessage):
  *   iframe → parent  { type:'mw-embed-auth', action:'request' }   (no secret)
  *   iframe → parent  { type:'mw-embed-auth', action:'set', token }
@@ -17,13 +21,18 @@
  */
 
 const NS = 'mw-embed-auth'
-const RELOAD_GUARD = NS + ':reloaded'
 
 // Token-bearing messages are posted ONLY to these first-party parent origins
 // (never '*'), so a page that embeds this app can't skim the login token. The
 // live parent origin is captured from the handshake below when available.
 const PARENT_ORIGINS = ['https://michaelwegter.com', 'https://www.michaelwegter.com']
 let knownParentOrigin = null
+
+// Resolves once the parent has answered (or we time out / aren't embedded), so
+// the auth bootstrap can wait for a recovered token before deciding logged-out.
+let started = false
+let resolveReady
+const readyPromise = new Promise((res) => { resolveReady = res })
 
 function isEmbedded() {
   try { return window.parent && window.parent !== window } catch { return false }
@@ -53,11 +62,27 @@ export function syncTokenToParent(token) {
   postToParent(token ? { type: NS, action: 'set', token } : { type: NS, action: 'clear' })
 }
 
-/** On embedded boot, pull the token from the parent vault. If our local copy
- *  was evicted (or is stale), adopt the parent's token and reload once so the
- *  app boots logged-in. Safe to call unconditionally and on every load. */
+/** Resolves when the embedded-token handshake has settled (or immediately when
+ *  not embedded). The auth bootstrap awaits this so a token recovered from the
+ *  parent is in place before authMe() runs. */
+export function whenEmbedTokenReady() {
+  return readyPromise
+}
+
+/** On embedded boot, ask the parent vault for the token and adopt it locally if
+ *  ours was evicted (or is stale). No reload — the bootstrap waits on
+ *  whenEmbedTokenReady() and then reads the freshly-stored token. */
 export function hydrateTokenFromParent(tokenKey) {
-  if (!isEmbedded()) return
+  if (!isEmbedded()) { resolveReady?.(); return }
+  if (started) return
+  started = true
+  let settled = false
+  const finish = () => {
+    if (settled) return
+    settled = true
+    window.removeEventListener('message', onMsg)
+    resolveReady?.()
+  }
   const onMsg = (e) => {
     if (!parentAllowed(e.origin)) return
     const d = e.data
@@ -68,22 +93,18 @@ export function hydrateTokenFromParent(tokenKey) {
     if (d.token) {
       if (d.token !== local) {
         try { localStorage.setItem(tokenKey, d.token) } catch {}
-        let already = false
-        try { already = sessionStorage.getItem(RELOAD_GUARD) === '1' } catch {}
-        if (!already) {
-          try { sessionStorage.setItem(RELOAD_GUARD, '1') } catch {}
-          window.removeEventListener('message', onMsg)
-          window.location.reload()
-        }
       }
     } else if (local) {
-      // Parent vault is empty but we're logged in here — seed the vault so the
-      // session survives the next eviction.
+      // Parent vault is empty but we're logged in here — seed it so the session
+      // survives the next eviction.
       syncTokenToParent(local)
     }
+    finish()
   }
   window.addEventListener('message', onMsg)
   // The request carries no token, so '*' is fine here; the parent authenticates
   // us by origin + source window, and we only trust origin-validated replies.
   try { window.parent.postMessage({ type: NS, action: 'request' }, '*') } catch {}
+  // Don't block boot forever if the parent never answers.
+  setTimeout(finish, 1500)
 }

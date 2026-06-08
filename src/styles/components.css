@@ -435,13 +435,6 @@
 }
 .week-row .label .pts-badge { color: var(--gold-deep); }
 .week-row .label .streak-badge { color: var(--fire); }
-.week-row .label .done-badge { color: var(--gold-deep); font-weight: 600; }
-/* Persistent "done" star on a completed smart reminder's row, since its grid
-   star may live in a week that isn't on screen. */
-.week-row .label .name .reminder-done-star {
-  display: inline-flex; vertical-align: middle; margin-left: 5px; color: var(--gold-deep);
-}
-.week-row .label .name .reminder-done-star svg { width: 12px; height: 12px; }
 
 .cell {
   height: var(--row-h);
