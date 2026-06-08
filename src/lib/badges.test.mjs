@@ -38,6 +38,26 @@ test('perfect-day badge counts stay in lifetime history', () => {
   assert.equal(computeBadgeStats(habits, completions, '2026-06-04').perfectDays, 1)
 })
 
+test('hidden or deleted smart reminders keep the points they earned', () => {
+  const habits = [
+    makeHabit({
+      id: 'smart',
+      points: 30,
+      source: 'gcal-ai',
+      hidden: true,
+      deleted: true,
+      freq: { kind: 'date', date: '2026-06-20' },
+    }),
+  ]
+  const completions = completionMap('smart', ['2026-06-20'], { scored: 30 })
+  const stats = computeBadgeStats(habits, completions, '2026-06-08')
+
+  // A reminder being hidden/deleted must not erase the completion's points
+  // from the lifetime score, nor stop it counting toward smart-reminder badges.
+  assert.equal(stats.completionScore, 30)
+  assert.equal(stats.smartCompletions, 1)
+})
+
 test('badge progress resets toward the next repeatable award', () => {
   const badges = badgeAwards({ ...emptyBadgeStats, totalCompletions: 26 })
   const first = badges.find(badge => badge.id === 'first')

@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import { applyTheme, getInitialTheme } from './lib/theme.js'
+import { hydrateTokenFromParent } from './lib/embedAuth.js'
+import { TOKEN_KEY } from './lib/api.js'
 
 import './styles/tokens.css'
 import './styles/base.css'
@@ -9,6 +11,11 @@ import './styles/components.css'
 
 /* Apply the saved / system theme before first paint to avoid a light-mode flash. */
 applyTheme(getInitialTheme())
+
+/* Recover the login token from the first-party parent shell if Safari evicted
+ * this iframe's third-party storage — keeps the user signed in for the token's
+ * full 7-day life instead of getting logged out every day or two. */
+hydrateTokenFromParent(TOKEN_KEY)
 
 /* ── Embed-mode height broadcaster ──────────────────────────────────────────
  * When this app is iframed (e.g. inside michaelwegter.com/apps/life-dashboard),

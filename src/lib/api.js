@@ -4,8 +4,9 @@
    and namespaces data by (owner_type, owner_id). */
 
 import { getDeviceToken } from './deviceToken.js'
+import { syncTokenToParent } from './embedAuth.js'
 
-const TOKEN_KEY = 'life_dashboard_auth_token'
+export const TOKEN_KEY = 'life_dashboard_auth_token'
 
 export const API_BASE =
   import.meta.env.VITE_API_BASE || 'https://api.michaelwegter.com'
@@ -18,6 +19,9 @@ export function setAuthToken(tok) {
     if (tok) localStorage.setItem(TOKEN_KEY, tok)
     else localStorage.removeItem(TOKEN_KEY)
   } catch {}
+  // Mirror to the parent shell so an embedded session survives Safari evicting
+  // this iframe's third-party storage. No-op when not embedded.
+  syncTokenToParent(tok || null)
 }
 
 function authHeaders() {

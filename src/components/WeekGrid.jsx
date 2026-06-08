@@ -357,6 +357,12 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
   }, [habit, days, completions])
 
   const streak = computeStreak(habit, completions, todayISO)
+  // Smart reminders are one-time, and their completion is recorded on the
+  // event's date — which often sits in a different week than the one on
+  // screen, so the grid star isn't visible. Show a persistent "done" star on
+  // the row itself so marking one done in the tiles reflects here right away.
+  const isSmart = habit.source === 'gcal-ai'
+  const reminderDone = isSmart && (completions[habit.id]?.length > 0)
 
   return (
     <div
@@ -364,6 +370,7 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         'week-row'
         + (habit.source === 'gcal-ai' ? ' smart-reminder' : '')
         + (habit.hidden ? ' smart-hidden' : '')
+        + (reminderDone ? ' reminder-done' : '')
       }
     >
       <div className="label">
@@ -375,10 +382,18 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
           title={onOpenEvent ? 'See the event details' : undefined}
           onKeyDown={onOpenEvent ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenEvent(habit, e) } } : undefined}
         >
-          <div className="name">{habit.name}</div>
+          <div className="name">
+            {habit.name}
+            {reminderDone && (
+              <span className="reminder-done-star" title="Marked done" aria-label="Marked done">
+                <Icon.Star />
+              </span>
+            )}
+          </div>
           <div className="freq-line">
             <span>{freqLabel(habit.freq)}</span>
             <span className="pts-badge">· {habit.points}pt</span>
+            {reminderDone && <span className="done-badge">· done</span>}
             {streak > 1 && <span className="streak-badge">· {streak}🔥</span>}
           </div>
         </div>

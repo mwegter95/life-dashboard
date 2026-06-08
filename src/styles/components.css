@@ -435,6 +435,13 @@
 }
 .week-row .label .pts-badge { color: var(--gold-deep); }
 .week-row .label .streak-badge { color: var(--fire); }
+.week-row .label .done-badge { color: var(--gold-deep); font-weight: 600; }
+/* Persistent "done" star on a completed smart reminder's row, since its grid
+   star may live in a week that isn't on screen. */
+.week-row .label .name .reminder-done-star {
+  display: inline-flex; vertical-align: middle; margin-left: 5px; color: var(--gold-deep);
+}
+.week-row .label .name .reminder-done-star svg { width: 12px; height: 12px; }
 
 .cell {
   height: var(--row-h);
@@ -946,10 +953,13 @@
   padding: 9px 11px; border: 0.5px solid var(--gold); border-radius: 8px;
   background: oklch(from var(--gold) 96% 0.045 80); text-align: left;
 }
-.award-glyph { font-size: 23px; text-align: center; color: var(--gold-deep); }
+/* The award card stays a light tan in both themes, so its text is pinned to
+   fixed dark inks rather than the theme vars (which flip to light in dark mode
+   and made the badge title white-on-tan / unreadable). */
+.award-glyph { font-size: 23px; text-align: center; color: oklch(62% 0.16 70); }
 .award-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.award-copy strong { font-size: 12.5px; font-weight: 600; color: var(--ink); }
-.award-copy span { font-family: "Geist Mono", monospace; font-size: 9.5px; color: var(--muted); }
+.award-copy strong { font-size: 12.5px; font-weight: 600; color: oklch(20% 0.015 70); }
+.award-copy span { font-family: "Geist Mono", monospace; font-size: 9.5px; color: oklch(45% 0.012 70); }
 .award-points {
   padding: 3px 7px; border-radius: 999px; background: var(--gold);
   font-family: "Geist Mono", monospace; font-size: 10.5px; font-weight: 600;
