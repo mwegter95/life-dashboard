@@ -9,6 +9,7 @@ export function CalendarPanel({ pushToast, onGenerated }) {
   const [status, setStatus] = useState(null)   // null = loading; {} = loaded
   const [events, setEvents] = useState([])
   const [eventsLoading, setEventsLoading] = useState(false)
+  const [eventsError, setEventsError] = useState('')
   const [generating, setGenerating] = useState(false)
 
   const loadStatus = useCallback(async () => {
@@ -27,8 +28,10 @@ export function CalendarPanel({ pushToast, onGenerated }) {
     try {
       const { events: evs } = await api.gcalEvents(90)
       setEvents(evs || [])
-    } catch {
+      setEventsError('')
+    } catch (e) {
       setEvents([])
+      setEventsError(e.message || 'Could not fetch Google Calendar events.')
     } finally {
       setEventsLoading(false)
     }
@@ -78,7 +81,11 @@ export function CalendarPanel({ pushToast, onGenerated }) {
     setGenerating(true)
     try {
       const res = await api.generateSmartTasks()
-      pushToast?.(`Smart reminders updated (${res.created_or_updated || 0})`)
+      pushToast?.(
+        res.skipped
+          ? 'No calendar events found — smart reminders left unchanged'
+          : `Smart reminders updated (${res.created_or_updated || 0})`
+      )
       await Promise.all([loadStatus(), loadEvents()])
       onGenerated?.()   // pull the new dated reminders into the dashboard
     } catch (e) {
@@ -139,7 +146,10 @@ export function CalendarPanel({ pushToast, onGenerated }) {
       </div>
       <div className="cal-list">
         {eventsLoading && <div className="cal-empty">Loading events…</div>}
-        {!eventsLoading && upcoming.length === 0 && (
+        {!eventsLoading && eventsError && (
+          <div className="cal-empty">{eventsError} Try reconnecting Google Calendar.</div>
+        )}
+        {!eventsLoading && !eventsError && upcoming.length === 0 && (
           <div className="cal-empty">Nothing upcoming in the next 3 months.</div>
         )}
         {upcoming.map(ev => (
