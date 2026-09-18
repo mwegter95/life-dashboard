@@ -147,8 +147,14 @@ export function gcalDisconnect() {
 export function gcalEvents(days = 90) {
   return request(`/api/life/gcal/events?days=${days}`)
 }
-export function generateSmartTasks() {
-  return request('/api/life/smart-tasks/generate', { method: 'POST' })
+/* `reset: true` clears every AI reminder you haven't checked off before
+   regenerating — the way to adopt changed qualification rules, since the normal
+   refresh only prunes future suggestions the new run didn't repeat. */
+export function generateSmartTasks({ reset = false } = {}) {
+  return request('/api/life/smart-tasks/generate', {
+    method: 'POST',
+    body: JSON.stringify({ reset }),
+  })
 }
 
 export function patchSmartHidden(habitId, hidden) {

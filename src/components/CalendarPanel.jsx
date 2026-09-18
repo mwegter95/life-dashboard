@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as api from '../lib/api.js'
+import { ConfirmModal } from './ConfirmModal.jsx'
 
 /* Google Calendar connection + upcoming-events list. AI smart reminders are
    generated server-side (on connect + on a daily schedule) and flow into the
@@ -11,6 +12,7 @@ export function CalendarPanel({ pushToast, onGenerated }) {
   const [eventsLoading, setEventsLoading] = useState(false)
   const [eventsError, setEventsError] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [confirmRebuild, setConfirmRebuild] = useState(false)
 
   const loadStatus = useCallback(async () => {
     try {
@@ -81,14 +83,16 @@ export function CalendarPanel({ pushToast, onGenerated }) {
     }
   }
 
-  const regenerate = async () => {
+  const regenerate = async ({ reset = false } = {}) => {
     setGenerating(true)
     try {
-      const res = await api.generateSmartTasks()
+      const res = await api.generateSmartTasks({ reset })
       pushToast?.(
         res.skipped
           ? 'No calendar events found — smart reminders left unchanged'
-          : `Smart reminders updated (${res.created_or_updated || 0})`
+          : reset
+            ? `Rebuilt — cleared ${res.purged || 0}, suggested ${res.created_or_updated || 0}`
+            : `Smart reminders updated (${res.created_or_updated || 0})`
       )
       await Promise.all([loadStatus(), loadEvents()])
       onGenerated?.()   // pull the new dated reminders into the dashboard
@@ -166,11 +170,26 @@ export function CalendarPanel({ pushToast, onGenerated }) {
         <span className="sub">{status.email || 'connected'}</span>
       </div>
       <div className="cal-actions">
-        <button className="btn tiny primary" onClick={regenerate} disabled={generating}>
+        <button className="btn tiny primary" onClick={() => regenerate()} disabled={generating}>
           {generating ? 'Thinking…' : '✨ Refresh smart reminders'}
         </button>
+        <button
+          className="btn tiny ghost"
+          onClick={() => setConfirmRebuild(true)}
+          disabled={generating}
+          title="Clear every unchecked calendar reminder and suggest a fresh set"
+        >Rebuild</button>
         <button className="btn tiny ghost cal-disconnect" onClick={disconnect}>Disconnect</button>
       </div>
+      {confirmRebuild && (
+        <ConfirmModal
+          title="Rebuild calendar reminders?"
+          message="Every calendar reminder you haven't checked off will be cleared, then a fresh set suggested from your calendar. Anything you've already completed stays, along with its points."
+          confirmLabel="Clear and rebuild"
+          onConfirm={() => { setConfirmRebuild(false); regenerate({ reset: true }) }}
+          onClose={() => setConfirmRebuild(false)}
+        />
+      )}
       <div className="cal-list">
         {eventsLoading && <div className="cal-empty">Loading events…</div>}
         {!eventsLoading && eventsError && (
