@@ -195,6 +195,24 @@ export function AppStateProvider({ children, onError }) {
     }
   }, [state.mantra])
 
+  /* Archive instead of destroy. Removing a habit from the plan shouldn't cost
+     you the points you earned with it, and it shouldn't erase it from the task
+     library — so "delete" parks the row with archived:true and everything
+     filters it out of the live list. `deleteHabit` above is still the real,
+     irreversible delete; nothing in the UI calls it any more. */
+  const setHabitArchived = useCallback(async (habit, archived) => {
+    const updated = { ...habit, archived }
+    if (archived) updated.archivedAt = new Date().toISOString().slice(0, 10)
+    else delete updated.archivedAt
+    dispatch({ type: 'UPSERT_HABIT', habit: updated })
+    try {
+      await api.putHabit(updated)
+    } catch (err) {
+      dispatch({ type: 'UPSERT_HABIT', habit })
+      errRef.current?.(`Couldn't ${archived ? 'remove' : 'restore'}: ${err.message}`)
+    }
+  }, [])
+
   // Re-pull everything from the backend (used after AI smart-task generation,
   // which adds dated reminders server-side).
   const refresh = useCallback(async () => {
@@ -230,8 +248,17 @@ export function AppStateProvider({ children, onError }) {
     }
   }, [])
 
+  /* `habits` is the live plan; `allHabits` keeps the archived rows too so the
+     scoring functions can still find the habit behind an old completion. */
+  const liveHabits = useMemo(() => state.habits.filter(h => !h.archived), [state.habits])
+  const archivedHabits = useMemo(() => state.habits.filter(h => h.archived), [state.habits])
+
   const value = useMemo(() => ({
     ...state,
+    habits: liveHabits,
+    allHabits: state.habits,
+    archivedHabits,
+    setHabitArchived,
     upsertHabit,
     deleteHabit,
     addCompletion,
@@ -241,7 +268,7 @@ export function AppStateProvider({ children, onError }) {
     refresh,
     toggleSmartHidden,
     setSmartDeleted,
-  }), [state, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh, toggleSmartHidden, setSmartDeleted])
+  }), [state, liveHabits, archivedHabits, setHabitArchived, upsertHabit, deleteHabit, addCompletion, removeCompletion, setReflection, setMantra, refresh, toggleSmartHidden, setSmartDeleted])
 
   return <StateCtx.Provider value={value}>{children}</StateCtx.Provider>
 }

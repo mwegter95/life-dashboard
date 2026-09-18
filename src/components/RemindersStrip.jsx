@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { daysBetween } from '../lib/dates.js'
+import { isRetiredOn } from '../lib/frequency.js'
 import { Icon } from './Icons.jsx'
 import { useAppState } from '../state/AppState.jsx'
 
@@ -9,6 +10,7 @@ export function RemindersStrip({ habits, completions, todayISO, onToggle }) {
     const list = []
     habits.forEach(h => {
       if (h.hidden || h.deleted) return   // hidden/deleted smart reminders drop out of the strip too
+      if (isRetiredOn(h, completions, todayISO)) return   // finished one-timers live in the library now
       if (h.freq?.kind === 'date') {
         const days = daysBetween(todayISO, h.freq.date)
         // A reminder is "done" once it has any completion (recorded on the day

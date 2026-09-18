@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
+  isOneTime, isRetiredOn, isVisibleInWeek, retirementDate,
 } from '../lib/frequency.js'
 import { addDays, fromISODate, toISODate, fmtWeekRange, DOW_INITIAL } from '../lib/dates.js'
 import { Icon } from './Icons.jsx'
@@ -9,7 +10,7 @@ import { useAppState } from '../state/AppState.jsx'
 
 export function WeekGrid({
   habits, completions, weekStartISO, todayISO, onToggle, onEdit, onDelete,
-  onPrevWeek, onNextWeek,
+  onPrevWeek, onNextWeek, onOpenLibrary,
 }) {
   const { toggleSmartHidden, setSmartDeleted } = useAppState()
   const [deletedAnchor, setDeletedAnchor] = useState(null)           // deleted-list popover anchor
@@ -33,8 +34,14 @@ export function WeekGrid({
     const da = a.freq?.date || '', db = b.freq?.date || ''
     return da < db ? -1 : da > db ? 1 : 0
   }
-  const regularHabits = habits.filter(h => h.source !== 'gcal-ai')
-  const smartHabits   = habits.filter(h => h.source === 'gcal-ai' && !h.deleted)
+  // A one-time task that was checked off keeps its row for the week it was
+  // finished in (so the star it earned still reads), then leaves the grid for
+  // good — it lives in the library from there on.
+  const inWeek = h => isVisibleInWeek(h, completions, weekStartISO)
+  const retiredHere = habits.filter(h => !inWeek(h) && !(h.source === 'gcal-ai' && h.deleted))
+
+  const regularHabits = habits.filter(h => h.source !== 'gcal-ai' && inWeek(h))
+  const smartHabits   = habits.filter(h => h.source === 'gcal-ai' && !h.deleted && inWeek(h))
   const visibleSmart  = smartHabits.filter(h => !h.hidden).sort(byDate)
   const hiddenSmart   = smartHabits.filter(h => h.hidden).sort(byDate)
   const deletedSmart  = habits.filter(h => h.source === 'gcal-ai' && h.deleted)
@@ -93,10 +100,22 @@ export function WeekGrid({
   const weekTotals = useMemo(() => {
     let earned = 0, possible = 0
     habits.forEach(h => {
+      // A free-form to-do (a one-off, or an AI reminder) has no scheduled day,
+      // so only the days it was actually logged on count — otherwise a single
+      // open one-off would claim its points seven times over.
+      const freeform = h.source === 'gcal-ai' || h.freq?.kind === 'one_off'
       days.forEach(day => {
-        if (isDueOn(h, day.iso)) {
+        if (isRetiredOn(h, completions, day.iso)) return
+        const logged = isDoneFor(h, day.iso, completions)
+        if (freeform) {
+          if (logged) {
+            const c = getCompletion(h, day.iso, completions)
+            const pts = c?.scored || h.points
+            earned += pts; possible += pts
+          }
+        } else if (isDueOn(h, day.iso)) {
           possible += h.points
-          if (isDoneFor(h, day.iso, completions)) {
+          if (logged) {
             const c = getCompletion(h, day.iso, completions)
             earned += c?.scored || h.points
           }
@@ -189,8 +208,18 @@ export function WeekGrid({
           onOpenEvent={openEvent}
         />
       ))}
-      {(hiddenSmart.length > 0 || deletedSmart.length > 0) && (
+      {(hiddenSmart.length > 0 || deletedSmart.length > 0 || retiredHere.length > 0) && (
         <div className="week-smart-controls">
+          {retiredHere.length > 0 && onOpenLibrary && (
+            <button
+              type="button"
+              className="week-pill"
+              onClick={onOpenLibrary}
+              title="Finished one-time tasks live in your library — open it to add one again"
+            >
+              <Icon.Archive /> Retired <span className="count">{retiredHere.length}</span>
+            </button>
+          )}
           {hiddenSmart.length > 0 && (
             <button
               type="button"
@@ -231,7 +260,12 @@ export function WeekGrid({
         />
       ))}
       <div className="week-foot">
-        <span>{habits.length} tracked</span>
+        <span>
+          {regularHabits.length + smartHabits.length} tracked
+          {retiredHere.length > 0 && (
+            <span className="week-foot-retired"> · {retiredHere.length} retired</span>
+          )}
+        </span>
         <span>{weekTotals.earned} / {weekTotals.possible} pts</span>
       </div>
       </div>
@@ -343,9 +377,12 @@ function DeletedModal({ deleted, anchor, onRestore, onClose }) {
 
 function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, onToggle, onEdit, onDelete, onToggleHidden, onDeleteSmart, onOpenEvent }) {
   const rowTotal = useMemo(() => {
-    const smart = habit.source === 'gcal-ai'
+    // Free-form to-dos (AI reminders and one-offs alike) have no scheduled day,
+    // so only logged days count — nothing here can read as "missed".
+    const smart = habit.source === 'gcal-ai' || habit.freq?.kind === 'one_off'
     let earned = 0, possible = 0
     days.forEach(d => {
+      if (isRetiredOn(habit, completions, d.iso)) return
       const logged = isDoneFor(habit, d.iso, completions)
       if (smart) {
         // Free-form to-do: every logged day counts; no "missed" possible.
@@ -371,6 +408,9 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
   // day, and a completed reminder's past due-date shouldn't read as "missed".
   const isSmart = habit.source === 'gcal-ai'
   const smartCompleted = isSmart && (completions[habit.id]?.length > 0)
+  // Shown on the week where a one-time task got checked off, so its
+  // disappearance next week isn't a surprise.
+  const retiresOn = isOneTime(habit) ? retirementDate(habit, completions) : null
 
   return (
     <div
@@ -394,6 +434,7 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
             <span>{freqLabel(habit.freq)}</span>
             <span className="pts-badge">· {habit.points}pt</span>
             {streak > 1 && <span className="streak-badge">· {streak}🔥</span>}
+            {retiresOn && <span className="retired-badge">· done, retires {fmtShortDate(retiresOn)}</span>}
           </div>
         </div>
         {onToggleHidden && (
@@ -443,7 +484,10 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         )}
       </div>
       {days.map((d, idx) => {
-        const due = isDueOn(habit, d.iso)
+        // Past the retirement date the task is history: no star to add, none to
+        // take away, and nothing to chase.
+        const retired = isRetiredOn(habit, completions, d.iso)
+        const due = isDueOn(habit, d.iso) && !retired
         const isFuture = d.iso > todayISO
         const loggedHere = isDoneFor(habit, d.iso, completions)
         // A smart reminder logged on any day counts as done and shows a solid
@@ -455,7 +499,7 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         const c = filled ? getCompletion(habit, d.iso, completions) : null
         const bonus = c && typeof c === 'object' && c.bonus
         // Don't flag a completed reminder's past due-date as missed.
-        const missed = due && !filled && d.iso < todayISO && !smartCompleted
+        const missed = due && !filled && d.iso < todayISO && !smartCompleted && !retired
         const isToday = d.iso === todayISO
 
         // Interactivity contract:
@@ -465,13 +509,16 @@ function WeekRow({ habit, days, completions, todayISO, editMode, rowEditMode, on
         //    log several days. Filled cells stay inert so a stray tap can't
         //    delete a completion.
         //  • edit mode → every non-future cell toggles freely (add or remove).
-        const interactive = isFuture ? false : (editMode ? true : ((due || isSmart) && !filled))
+        const interactive = (isFuture || retired)
+          ? false
+          : (editMode ? true : ((due || isSmart) && !filled))
 
         const cls =
           'cell'
           // Smart reminders are actionable on any day, so skip the "not due"
           // dimming/stripes that would make those days look unavailable.
           + (!due && !isSmart ? ' not-due' : '')
+          + (retired ? ' retired' : '')
           + (isFuture ? ' future' : '')
           + (isToday ? ' today' : '')
           + (done ? ' done' : '')

@@ -44,6 +44,26 @@ export const Icon = {
       <path d="M13.3 9.9a5.6 5.6 0 0 1-7.2-7.2 5.7 5.7 0 1 0 7.2 7.2z" />
     </svg>
   ),
+  Search: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="7" cy="7" r="4.3" />
+      <line x1="10.2" y1="10.2" x2="13.5" y2="13.5" />
+    </svg>
+  ),
+  Library: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2.5" width="3" height="11" rx="1" />
+      <rect x="6.5" y="2.5" width="3" height="11" rx="1" />
+      <path d="M11.4 3.6l2.4.7-2.6 9.1-2.1-.6" />
+    </svg>
+  ),
+  Archive: () => (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="12" height="3" rx="0.8" />
+      <path d="M3 6v6a1 1 0 001 1h8a1 1 0 001-1V6" />
+      <line x1="6.5" y1="9" x2="9.5" y2="9" />
+    </svg>
+  ),
   Eye: () => (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" />

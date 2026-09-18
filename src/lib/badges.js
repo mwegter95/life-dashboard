@@ -1,5 +1,5 @@
 import { addDays, fromISODate, startOfWeek, toISODate } from './dates.js'
-import { computeStreak, isDoneFor, isDueOn } from './frequency.js'
+import { computeStreak, isDoneFor, isActionableOn } from './frequency.js'
 
 function repeatCount(value, first, every = first) {
   const n = Number(value) || 0
@@ -190,7 +190,7 @@ export function computeBadgeStats(habits, completions, todayISO) {
   let perfectDays = 0
   for (const iso of completionsByDate.keys()) {
     if (iso > todayISO) continue
-    const due = habits.filter(h => isDueOn(h, iso))
+    const due = habits.filter(h => isActionableOn(h, iso, completions))
     if (due.length && due.every(h => isDoneFor(h, iso, completions))) perfectDays++
   }
 
@@ -209,7 +209,7 @@ export function computeBadgeStats(habits, completions, todayISO) {
     let activeDays = 0
     for (let day = 0; day < 7; day++) {
       const iso = toISODate(addDays(start, day))
-      const due = habits.filter(h => isDueOn(h, iso))
+      const due = habits.filter(h => isActionableOn(h, iso, completions))
       dueCount += due.length
       if (due.some(h => !isDoneFor(h, iso, completions))) allDueDone = false
       if ((completionsByDate.get(iso) || 0) > 0) activeDays++

@@ -31,11 +31,15 @@ export function CalendarPanel({ pushToast, onGenerated }) {
       setEventsError('')
     } catch (e) {
       setEvents([])
-      setEventsError(e.message || 'Could not fetch Google Calendar events.')
+      // 409 = the stored refresh token is dead (Google's invalid_grant). That's
+      // a reconnect prompt, not an error message — re-read status so the panel
+      // switches to the reconnect card.
+      if (e.status === 409) { setEventsError(''); loadStatus() }
+      else setEventsError(e.message || 'Could not fetch Google Calendar events.')
     } finally {
       setEventsLoading(false)
     }
-  }, [])
+  }, [loadStatus])
 
   useEffect(() => { loadStatus() }, [loadStatus])
 
@@ -52,8 +56,8 @@ export function CalendarPanel({ pushToast, onGenerated }) {
 
   // Load events whenever we become connected.
   useEffect(() => {
-    if (status?.connected) loadEvents()
-  }, [status?.connected, loadEvents])
+    if (status?.connected && !status?.needs_reauth) loadEvents()
+  }, [status?.connected, status?.needs_reauth, loadEvents])
 
   const connect = async () => {
     try {
@@ -109,6 +113,29 @@ export function CalendarPanel({ pushToast, onGenerated }) {
       <div className="panel">
         <div className="panel-hd"><h2>Calendar</h2></div>
         <div className="cal-empty">Calendar sync isn’t set up on the server yet.</div>
+      </div>
+    )
+  }
+
+  // Google rejected the refresh token — most often because the OAuth consent
+  // screen is still in Testing, which expires every refresh token after 7 days.
+  // Only a fresh consent fixes it, so say so plainly instead of failing quietly.
+  if (status.needs_reauth) {
+    return (
+      <div className="panel">
+        <div className="panel-hd">
+          <h2>Calendar</h2>
+          <span className="sub">reconnect needed</span>
+        </div>
+        <div className="cal-connect">
+          <p className="cal-blurb">
+            Google stopped accepting the saved connection{status.email ? ` for ${status.email}` : ''},
+            so smart reminders are paused. One sign-in puts it back —
+            your existing reminders are untouched.
+          </p>
+          <button className="btn primary" onClick={connect}>Reconnect Google Calendar</button>
+          <button className="btn tiny ghost cal-disconnect" onClick={disconnect}>Disconnect instead</button>
+        </div>
       </div>
     )
   }

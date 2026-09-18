@@ -1204,3 +1204,229 @@
     animation: none;
   }
 }
+
+/* ───────────────────── retired one-time tasks ───────────────────── */
+/* A one-time task that's been checked off keeps its row for the week it was
+   finished in, then leaves the calendar. Days on or after its retirement read
+   as inert history: no dot to chase, no cell to tap. */
+.week-row .cell.retired {
+  background: transparent;
+  opacity: .35;
+}
+.week-row .cell.retired::after { content: none; }
+.retired-badge {
+  color: var(--good);
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.week-foot-retired { color: var(--faint); }
+
+/* ───────────────────── task library ───────────────────── */
+.modal.modal--library { max-width: 720px; }
+.modal-body--library { padding: 0; gap: 0; }
+
+.modal-tabs {
+  display: flex; gap: 4px;
+  padding: 12px 22px 0;
+}
+.modal-tabs button {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px 10px;
+  font-size: 13px; color: var(--muted);
+  border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 0 0;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.modal-tabs button svg { width: 14px; height: 14px; }
+.modal-tabs button:hover { color: var(--ink-2); background: var(--surface); }
+.modal-tabs button.active {
+  color: var(--ink); font-weight: 500;
+  border-bottom-color: var(--ink);
+}
+
+/* Chip shown on the form when the fields came from a library card. */
+.from-library {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 8px;
+  background: var(--surface-2); border: var(--rule);
+  font-size: 12.5px; color: var(--ink-2);
+}
+.from-library svg { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; }
+.from-library span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.from-library strong { font-weight: 500; color: var(--ink); }
+.from-library button {
+  margin-left: auto; flex-shrink: 0;
+  color: var(--muted); padding: 3px; border-radius: 5px; line-height: 0;
+}
+.from-library button svg { width: 12px; height: 12px; }
+.from-library button:hover { color: var(--ink); background: var(--bg); }
+
+.lib { display: flex; flex-direction: column; }
+
+.lib-controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 16px 22px 12px;
+}
+.lib-search {
+  position: relative; flex: 1 1 220px; min-width: 0;
+  display: flex; align-items: center;
+}
+.lib-search > svg {
+  position: absolute; left: 11px;
+  width: 14px; height: 14px; color: var(--muted); pointer-events: none;
+}
+.lib-search input {
+  width: 100%;
+  border: 0.5px solid var(--border-strong);
+  background: var(--surface); color: var(--ink);
+  border-radius: 999px;
+  padding: 9px 32px 9px 32px;
+  font-size: 13.5px; outline: none;
+  transition: border-color .12s, background .12s;
+}
+.lib-search input:focus { border-color: var(--ink); background: var(--bg); }
+.lib-search-clear {
+  position: absolute; right: 8px;
+  color: var(--muted); padding: 4px; border-radius: 999px; line-height: 0;
+}
+.lib-search-clear svg { width: 12px; height: 12px; }
+.lib-search-clear:hover { color: var(--ink); background: var(--surface-2); }
+
+.lib-sort {
+  display: flex; gap: 0; flex-shrink: 0;
+  border: 0.5px solid var(--border-strong); border-radius: 999px;
+  padding: 3px; background: var(--surface);
+}
+.lib-sort button {
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 11.5px; color: var(--muted); white-space: nowrap;
+}
+.lib-sort button.on {
+  background: var(--bg); color: var(--ink); font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.lib-sort button:hover:not(.on) { color: var(--ink-2); }
+
+.lib-cats {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 0 22px 12px;
+}
+.lib-cats button {
+  padding: 4px 11px; border-radius: 999px;
+  border: 0.5px solid var(--border-strong); background: var(--surface);
+  font-size: 12px; color: var(--ink-2);
+  transition: background .12s, color .12s, border-color .12s;
+}
+.lib-cats button:hover { border-color: var(--muted); }
+.lib-cats button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.lib-count {
+  padding: 0 22px 10px;
+  font-family: "Geist Mono", monospace; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint);
+}
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  padding: 0 22px 20px;
+}
+
+.lib-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 7px;
+  padding: 13px 14px 12px;
+  border: 0.5px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .14s, background .14s, transform .14s, box-shadow .14s;
+}
+.lib-card:hover, .lib-card:focus-visible {
+  border-color: var(--ink);
+  background: var(--bg);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+  outline: none;
+}
+.lib-card.tracking { cursor: default; opacity: .6; }
+.lib-card.tracking:hover { transform: none; box-shadow: none; border-color: var(--border-strong); background: var(--surface); }
+
+.lib-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lib-origin {
+  font-family: "Geist Mono", monospace; font-size: 9.5px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 2px 7px; border-radius: 999px;
+  border: 0.5px solid currentColor;
+}
+.lib-origin--retired   { color: var(--good); }
+.lib-origin--archived  { color: var(--cool); }
+.lib-origin--dismissed { color: var(--muted); }
+.lib-pts {
+  font-family: "Geist Mono", monospace; font-size: 11px; color: var(--gold-deep);
+}
+
+.lib-card-name {
+  font-size: 14.5px; line-height: 1.3; color: var(--ink);
+  letter-spacing: -0.005em;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lib-card-meta {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--muted);
+}
+.lib-cat { color: var(--ink-2); }
+.lib-dot { color: var(--faint); }
+.lib-card-stats {
+  font-family: "Geist Mono", monospace; font-size: 10.5px; color: var(--faint);
+}
+.lib-card-cta {
+  margin-top: 2px; padding-top: 9px;
+  border-top: 0.5px solid var(--border);
+  font-size: 11.5px;
+}
+.lib-use {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--muted); transition: color .12s;
+}
+.lib-use svg { width: 12px; height: 12px; }
+.lib-card:hover .lib-use, .lib-card:focus-visible .lib-use { color: var(--ink); }
+.lib-tracking {
+  font-family: "Geist Mono", monospace; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint);
+}
+.lib-restore {
+  align-self: flex-start;
+  font-size: 11px; color: var(--muted);
+  padding: 2px 0; text-decoration: underline; text-underline-offset: 3px;
+}
+.lib-restore:hover { color: var(--ink); }
+
+.lib-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 48px 32px 52px; text-align: center;
+}
+.lib-empty-glyph { font-size: 28px; color: var(--faint); line-height: 1; }
+.lib-empty-title { margin: 4px 0 0; font-size: 15px; color: var(--ink); }
+.lib-empty-sub {
+  margin: 0; max-width: 40ch;
+  font-size: 12.5px; line-height: 1.55; color: var(--muted);
+}
+.lib-noresults {
+  padding: 32px 22px 40px; text-align: center;
+  font-size: 13px; color: var(--muted);
+}
+
+@media (max-width: 560px) {
+  .lib-grid { grid-template-columns: 1fr; padding: 0 16px 16px; }
+  .lib-controls { padding: 14px 16px 10px; }
+  .lib-cats, .lib-count { padding-left: 16px; padding-right: 16px; }
+  .lib-sort { width: 100%; }
+  .lib-sort button { flex: 1; }
+  .modal-tabs { padding: 10px 16px 0; }
+}

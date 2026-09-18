@@ -65,7 +65,10 @@ function AppShell() {
 
 function Dashboard({ toasts, pushToast }) {
   const state = useAppState()
-  const { habits, completions, reflections, mantra, loading, error } = state
+  // `habits` is the live plan — what's due, what's starrable. `allHabits` also
+  // carries archived rows, so a completion logged against a habit you've since
+  // put away still contributes its points to every total below.
+  const { habits, allHabits, completions, reflections, mantra, loading, error } = state
 
   const [todayISO, setTodayISO] = useState(() => toISODate(new Date()))
   const [modal, setModal] = useState(null)        // null | { mode, habit? }
@@ -100,9 +103,9 @@ function Dashboard({ toasts, pushToast }) {
   }, [])
 
   /* Derived stats */
-  const possibleToday = possibleForDay(habits, todayISO)
-  const scoreToday    = dayScore(habits, completions, todayISO)
-  const scoreYesterday = dayScore(habits, completions, toISODate(addDays(fromISODate(todayISO), -1)))
+  const possibleToday = possibleForDay(habits, todayISO, completions)
+  const scoreToday    = dayScore(allHabits, completions, todayISO)
+  const scoreYesterday = dayScore(allHabits, completions, toISODate(addDays(fromISODate(todayISO), -1)))
   const weekStartISO   = toISODate(startOfWeek(fromISODate(todayISO), true))
   const lastWeekStartISO = toISODate(addDays(fromISODate(weekStartISO), -7))
   // The week grid can browse other weeks without affecting the stats panels,
@@ -112,18 +115,18 @@ function Dashboard({ toasts, pushToast }) {
   const scoreThisWeek = useMemo(() => {
     let s = 0
     for (let i = 0; i < 7; i++) {
-      s += dayScore(habits, completions, toISODate(addDays(fromISODate(weekStartISO), i)))
+      s += dayScore(allHabits, completions, toISODate(addDays(fromISODate(weekStartISO), i)))
     }
     return s
-  }, [habits, completions, weekStartISO])
+  }, [allHabits, completions, weekStartISO])
 
   const scoreLastWeek = useMemo(() => {
     let s = 0
     for (let i = 0; i < 7; i++) {
-      s += dayScore(habits, completions, toISODate(addDays(fromISODate(lastWeekStartISO), i)))
+      s += dayScore(allHabits, completions, toISODate(addDays(fromISODate(lastWeekStartISO), i)))
     }
     return s
-  }, [habits, completions, lastWeekStartISO])
+  }, [allHabits, completions, lastWeekStartISO])
 
   const badgeStats = useMemo(
     () => computeBadgeStats(habits, completions, todayISO),
@@ -135,7 +138,7 @@ function Dashboard({ toasts, pushToast }) {
   const bestDay = useMemo(() => {
     const m = new Map()
     Object.entries(completions).forEach(([hid, arr]) => {
-      const habit = habits.find(h => h.id === hid)
+      const habit = allHabits.find(h => h.id === hid)
       if (!habit) return
       arr.forEach(c => {
         const date = typeof c === 'string' ? c : c.date
@@ -144,7 +147,7 @@ function Dashboard({ toasts, pushToast }) {
       })
     })
     return [...m.values()].reduce((a, b) => Math.max(a, b), 0)
-  }, [completions, habits])
+  }, [completions, allHabits])
 
   const stats = {
     ...badgeStats,
@@ -237,12 +240,14 @@ function Dashboard({ toasts, pushToast }) {
     }
     setConfirmDelete(h)
   }, [state, pushToast])
+  // Removing a habit archives it rather than destroying it: the points it
+  // earned stay on the score, and it stays pickable from the task library.
   const confirmDeleteHabit = useCallback(() => {
     if (!confirmDelete) return
-    state.deleteHabit(confirmDelete.id)
+    state.setHabitArchived(confirmDelete, true)
     setConfirmDelete(null)
-    setModal(null)       // also close the edit modal if delete came from there
-    pushToast('Deleted')
+    setModal(null)       // also close the edit modal if remove came from there
+    pushToast('Moved to your library')
   }, [state, confirmDelete, pushToast])
 
   /* Keyboard: 'n' to add, Esc to close modal. */
@@ -253,6 +258,10 @@ function Dashboard({ toasts, pushToast }) {
       if (e.key === 'n' && !e.metaKey && !e.ctrlKey && !typing) {
         e.preventDefault()
         setModal({ mode: 'add' })
+      }
+      if (e.key === 'l' && !e.metaKey && !e.ctrlKey && !typing) {
+        e.preventDefault()
+        setModal({ mode: 'add', tab: 'library' })
       }
       if (e.key === 'Escape') {
         if (celebration) setCelebration(null)
@@ -284,6 +293,7 @@ function Dashboard({ toasts, pushToast }) {
         currentStreak={longestStreak}
         level={lvl}
         onAdd={() => setModal({ mode: 'add' })}
+        onOpenLibrary={() => setModal({ mode: 'add', tab: 'library' })}
         authSlot={<AuthChip onOpenAuth={() => setAuthOpen(true)} />}
       />
 
@@ -317,6 +327,7 @@ function Dashboard({ toasts, pushToast }) {
             onDelete={requestDelete}
             onPrevWeek={() => setWeekOffset(o => o - 1)}
             onNextWeek={() => setWeekOffset(o => o + 1)}
+            onOpenLibrary={() => setModal({ mode: 'add', tab: 'library' })}
           />
           <div style={{
             padding: '14px 4px 0',
@@ -329,6 +340,7 @@ function Dashboard({ toasts, pushToast }) {
               <span><span className="kbd">Tap</span> to check off</span>
               <span><span className="kbd">+</span> add habit</span>
               <span><span className="kbd">Edit rows</span> to change or remove</span>
+              <span><span className="kbd">L</span> your task library</span>
             </div>
             <span style={{ fontFamily: 'Geist Mono, monospace' }}>
               press <span className="kbd">N</span> to add
@@ -372,6 +384,8 @@ function Dashboard({ toasts, pushToast }) {
       {modal && (
         <AddHabitModal
           initial={modal.habit}
+          defaultTab={modal.tab || 'new'}
+          todayISO={todayISO}
           onSave={saveHabit}
           onClose={() => setModal(null)}
           onDelete={requestDelete}
@@ -379,9 +393,9 @@ function Dashboard({ toasts, pushToast }) {
       )}
       {confirmDelete && (
         <ConfirmModal
-          title="Are you sure you want to delete?"
-          message={`"${confirmDelete.name}" and its history will be permanently removed. This can't be undone.`}
-          confirmLabel="Delete habit"
+          title="Remove this from your plan?"
+          message={`"${confirmDelete.name}" comes off the calendar and moves into your task library. Its history — and the points it earned — stay on your score, and you can add it back any time.`}
+          confirmLabel="Remove habit"
           onConfirm={confirmDeleteHabit}
           onClose={() => setConfirmDelete(null)}
         />

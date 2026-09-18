@@ -3,7 +3,7 @@ import { Checkbox } from './Checkbox.jsx'
 import { Icon } from './Icons.jsx'
 import { useAppState } from '../state/AppState.jsx'
 import {
-  isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak,
+  isDueOn, isDoneFor, getCompletion, freqLabel, computeStreak, isRetiredOn,
 } from '../lib/frequency.js'
 
 export function TodayPanel({
@@ -14,8 +14,12 @@ export function TodayPanel({
   const [showOffSchedule, setShowOffSchedule] = useState(false)
 
   // Hidden or deleted smart reminders drop out of Today entirely (their tiles
-  // disappear). Unhide/restore them from the week grid's lists.
-  const visibleHabits = habits.filter(h => !(h.source === 'gcal-ai' && (h.hidden || h.deleted)))
+  // disappear). Unhide/restore them from the week grid's lists. A one-time task
+  // checked off before today has retired to the library and is gone from here.
+  const visibleHabits = habits.filter(h =>
+    !(h.source === 'gcal-ai' && (h.hidden || h.deleted)) &&
+    !isRetiredOn(h, completions, todayISO)
+  )
 
   const dueToday = visibleHabits.filter(h =>
     isDueOn(h, todayISO) ||
@@ -41,6 +45,7 @@ export function TodayPanel({
   const offSchedule = habits
     .filter(h => {
       if (h.source === 'gcal-ai') return false
+      if (isRetiredOn(h, completions, todayISO)) return false
       if (dueIds.has(h.id)) return false
       const k = h.freq?.kind
       if (k === 'daily' || k === 'weekdays' || k === 'every_n') return true

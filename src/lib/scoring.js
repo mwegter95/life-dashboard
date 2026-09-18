@@ -5,7 +5,7 @@
    scoreCompletion = round(points * mult) + (bonus ? 1 : 0)
    bonus = 12% chance per completion. */
 
-import { isDueOn, isDoneFor, getCompletion } from './frequency.js'
+import { isDueOn, isDoneFor, getCompletion, isActionableOn } from './frequency.js'
 
 export const BONUS_ROLL_CHANCE = 0.12
 
@@ -26,10 +26,13 @@ export function dayScore(habits, completions, iso) {
   return s
 }
 
-export function possibleForDay(habits, iso) {
+/* `completions` is optional only so old call sites keep working; pass it so a
+   one-time task that has already been checked off stops inflating the day's
+   possible total forever. */
+export function possibleForDay(habits, iso, completions = {}) {
   let s = 0
   habits.forEach(h => {
-    if (isDueOn(h, iso)) s += h.points
+    if (isActionableOn(h, iso, completions)) s += h.points
   })
   return s
 }

@@ -7,6 +7,7 @@ export function Topbar({
   dateStr,
   scoreToday, possibleToday, totalScore, currentStreak, level,
   onAdd,
+  onOpenLibrary,
   authSlot,
 }) {
   // main.jsx already applied this theme to <html>; mirror it locally so the
@@ -56,6 +57,16 @@ export function Topbar({
         >
           {theme === 'dark' ? <Icon.Sun /> : <Icon.Moon />}
         </button>
+        {onOpenLibrary && (
+          <button
+            className="btn icon-only library-btn"
+            onClick={onOpenLibrary}
+            aria-label="Open your task library"
+            title="Task library — everything you've finished or put away"
+          >
+            <Icon.Library />
+          </button>
+        )}
         {authSlot}
         <button className="btn primary add-habit-btn" onClick={onAdd} aria-label="Add habit">
           <Icon.Plus /> <span className="btn-label">Add habit</span>

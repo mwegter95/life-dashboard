@@ -44,6 +44,60 @@ export function freqLabel(f) {
   return ''
 }
 
+/* ── One-time tasks & retirement ─────────────────────────────────────────────
+   A one-time task — a one-off, a task pinned to a single date, or an AI
+   calendar reminder — is finished for good once it's checked off. Leaving it in
+   the grid afterwards just gums up the week, so it *retires*: starting the day
+   after its last completion it stops being due, selectable or starrable
+   anywhere in the app. It keeps its completions, so every point it earned still
+   counts toward the day, the week, the total and the badges.
+
+   Retirement is derived from the completions rather than stored on the habit.
+   Two things fall out of that: it applies retroactively to anything completed
+   in the past (no migration), and un-starring a task brings it straight back. */
+
+const ONE_TIME_KINDS = new Set(['one_off', 'date'])
+
+export function isOneTime(habit) {
+  return !!habit && (habit.source === 'gcal-ai' || ONE_TIME_KINDS.has(habit.freq?.kind))
+}
+
+/* Latest date this habit was checked off, or null. */
+export function lastCompletionDate(habit, completions) {
+  let last = null
+  for (const c of completions[habit.id] || []) {
+    const d = typeof c === 'string' ? c : c.date
+    if (d && (last === null || d > last)) last = d
+  }
+  return last
+}
+
+/* First date on which a one-time task counts as retired — the day after it was
+   last checked off. null when it isn't one-time, or isn't done yet. */
+export function retirementDate(habit, completions) {
+  if (!isOneTime(habit)) return null
+  const last = lastCompletionDate(habit, completions)
+  return last ? toISODate(addDays(fromISODate(last), 1)) : null
+}
+
+export function isRetiredOn(habit, completions, dateISO) {
+  const r = retirementDate(habit, completions)
+  return !!r && dateISO >= r
+}
+
+/* Due *and* not retired — what every "can I star this?" site actually means. */
+export function isActionableOn(habit, dateISO, completions) {
+  return isDueOn(habit, dateISO) && !isRetiredOn(habit, completions, dateISO)
+}
+
+/* Does this habit still deserve a row in the week starting `weekStartISO`?
+   A task retired mid-week keeps its row for that week so the star it earned
+   stays visible; from the next week on, the row is gone. */
+export function isVisibleInWeek(habit, completions, weekStartISO) {
+  const r = retirementDate(habit, completions)
+  return !r || r > weekStartISO
+}
+
 export function isDoneFor(habit, dateISO, completions) {
   return (completions[habit.id] || []).some(c =>
     (typeof c === 'string' ? c : c.date) === dateISO
